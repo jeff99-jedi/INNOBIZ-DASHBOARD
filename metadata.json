@@ -1,0 +1,6 @@
+{
+  "name": "이노비즈 문서 그룹 관리기",
+  "description": "이노비즈(InnoBiz) 기술혁신인증 준비를 위한 문서 그룹 관리, 엑셀 AI 변환, 자가진단 파트별 실무 안내서 및 평가항목별 모의채점 통계·차트 분석 시스템",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

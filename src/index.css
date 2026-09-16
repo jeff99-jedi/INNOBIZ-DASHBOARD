@@ -1,0 +1,83 @@
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
+@import "tailwindcss";
+
+@theme {
+  --text-2xs: 14px;
+  --text-2xs--line-height: 1.4;
+  --text-xs: 14px;
+  --text-xs--line-height: 1.45;
+  --text-sm: 16px;
+  --text-sm--line-height: 1.5;
+  --text-base: 18px;
+  --text-base--line-height: 1.6;
+  --text-lg: 20px;
+  --text-lg--line-height: 1.5;
+  --text-xl: 23px;
+  --text-xl--line-height: 1.4;
+  --text-2xl: 26px;
+  --text-2xl--line-height: 1.35;
+  --text-3xl: 30px;
+  --text-3xl--line-height: 1.3;
+  --text-4xl: 36px;
+  --text-4xl--line-height: 1.25;
+}
+
+:root {
+  --font-pretendard: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, "Helvetica Neue", "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif;
+  font-size: 16px;
+}
+
+*, ::before, ::after {
+  font-family: var(--font-pretendard);
+}
+
+html, body {
+  background-color: #f8fafc;
+  color: #0f172a;
+  font-family: var(--font-pretendard);
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Force minimum font size of 14px across all small arbitrary text classes */
+[class*="text-[8px]"],
+[class*="text-[9px]"],
+[class*="text-[10px]"],
+[class*="text-[11px]"],
+[class*="text-[12px]"],
+[class*="text-[13px]"] {
+  font-size: 14px !important;
+  line-height: 1.45 !important;
+}
+
+::selection {
+  background: #3b82f6;
+  color: #ffffff;
+}
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 15mm 12mm 15mm 12mm;
+  }
+
+  body {
+    background: #ffffff !important;
+    color: #0f172a !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Force expanded view during print for audit guide */
+  .print-expand-all {
+    display: block !important;
+  }
+
+  /* Clean page break management */
+  .break-inside-avoid {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+}
+

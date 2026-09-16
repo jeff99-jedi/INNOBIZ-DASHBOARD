@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+  <!-- Red square border with slight rounding -->
+  <rect x="6" y="6" width="108" height="108" rx="8" ry="8" fill="none" stroke="#dc2626" stroke-width="6" opacity="0.88"/>
+  <!-- Inner seal border -->
+  <rect x="12" y="12" width="96" height="96" rx="4" ry="4" fill="none" stroke="#dc2626" stroke-width="1.5" opacity="0.8"/>
+  <!-- Seal Korean Characters: 株式會社 더한농 代表理事之印 -->
+  <g fill="#dc2626" font-family="'Noto Serif KR', 'Batang', serif" font-weight="900" font-size="22" text-anchor="middle" dominant-baseline="central" opacity="0.92">
+    <!-- 4 columns / 3 rows seal layout -->
+    <text x="90" y="32">株</text>
+    <text x="90" y="60">式</text>
+    <text x="90" y="88">會</text>
+    
+    <text x="66" y="32">社</text>
+    <text x="66" y="60">더</text>
+    <text x="66" y="88">한</text>
+    
+    <text x="42" y="32">농</text>
+    <text x="42" y="60">代</text>
+    <text x="42" y="88">表</text>
+    
+    <text x="18" y="32">理</text>
+    <text x="18" y="60">事</text>
+    <text x="18" y="88">印</text>
+  </g>
+</svg>
