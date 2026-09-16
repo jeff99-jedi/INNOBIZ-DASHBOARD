@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, Printer, RotateCcw, Search, ShieldCheck, HelpCircle, Building2, Sparkles, FileSpreadsheet, BookOpen, Layers, BarChart3, Home } from 'lucide-react';
+import { Plus, FolderDown, RotateCcw, Search, ShieldCheck, HelpCircle, Building2, Sparkles, FileSpreadsheet, BookOpen, Layers, BarChart3, Home } from 'lucide-react';
 import { CompanyProfile } from '../types';
 
 interface HeaderProps {
@@ -143,18 +143,8 @@ export const Header: React.FC<HeaderProps> = ({
               onClick={onOpenExportModal}
               className="text-xs font-semibold py-1.5 px-2.5 rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 flex items-center gap-1.5 cursor-pointer transition-colors shadow-2xs"
             >
-              <Printer className="w-3.5 h-3.5 text-slate-500" />
+              <FolderDown className="w-3.5 h-3.5 text-blue-600" />
               <span className="hidden sm:inline">자료실</span>
-            </button>
-
-            <button
-              id="btn-create-group-header"
-              type="button"
-              onClick={onOpenCreateModal}
-              className="text-xs font-semibold py-1.5 px-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-1.5 cursor-pointer transition-colors shadow-2xs"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>그룹 추가</span>
             </button>
 
             <button
