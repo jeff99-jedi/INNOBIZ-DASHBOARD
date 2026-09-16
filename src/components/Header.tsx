@@ -138,23 +138,13 @@ export const Header: React.FC<HeaderProps> = ({
             )}
 
             <button
-              id="btn-company-profile"
-              type="button"
-              onClick={onOpenCompanyModal}
-              className="text-xs font-semibold py-1.5 px-2.5 rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 flex items-center gap-1.5 cursor-pointer transition-colors shadow-2xs"
-            >
-              <Building2 className="w-3.5 h-3.5 text-slate-500" />
-              <span className="hidden sm:inline">기업정보</span>
-            </button>
-
-            <button
               id="btn-export-report"
               type="button"
               onClick={onOpenExportModal}
               className="text-xs font-semibold py-1.5 px-2.5 rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 flex items-center gap-1.5 cursor-pointer transition-colors shadow-2xs"
             >
               <Printer className="w-3.5 h-3.5 text-slate-500" />
-              <span className="hidden sm:inline">실사 대비표</span>
+              <span className="hidden sm:inline">자료실</span>
             </button>
 
             <button
