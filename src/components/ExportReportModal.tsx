@@ -1,28 +1,21 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { CompanyProfile, DocumentGroup, SelfAuditGuideItem, SelfAuditOption } from '../types';
 import { SELF_AUDIT_PARTS, SELF_AUDIT_GUIDE_ITEMS } from '../data/selfAuditGuideData';
 import { generateDocumentsForCompany, GeneratedDocTemplate } from '../data/generatedDocTemplates';
 import { convertImageUrlToBase64Png } from '../utils/imageUtils';
 import { convertMarkdownToRichHtml } from './AutoDocGeneratorModal';
-import { getSupabaseClient, getStoredSupabaseConfig, saveStoredSupabaseConfig } from '../lib/supabaseClient';
 import {
   X,
   Download,
   FolderDown,
-  Database,
-  CheckCircle2,
-  AlertCircle,
   FileText,
   Search,
   ExternalLink,
   ShieldCheck,
   Building2,
-  RefreshCw,
   SlidersHorizontal,
   Check,
-  FileDown,
-  Save,
-  KeyRound
+  FileDown
 } from 'lucide-react';
 
 interface ExportReportModalProps {
@@ -53,14 +46,6 @@ export const ExportReportModal: React.FC<ExportReportModalProps> = ({
     return {};
   });
 
-  // Supabase connection & settings modal state
-  const [isSupabaseModalOpen, setIsSupabaseModalOpen] = useState(false);
-  const [supabaseUrlInput, setSupabaseUrlInput] = useState('');
-  const [supabaseKeyInput, setSupabaseKeyInput] = useState('');
-  const [supabaseStatusMsg, setSupabaseStatusMsg] = useState<string | null>(null);
-  const [isSyncing, setIsSyncing] = useState(false);
-  const [syncResult, setSyncResult] = useState<{ success: boolean; message: string } | null>(null);
-
   // Active filter by Part & Search query
   const [activePartFilter, setActivePartFilter] = useState<'all' | 'part1' | 'part2' | 'part3' | 'part4'>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -78,119 +63,6 @@ export const ExportReportModal: React.FC<ExportReportModalProps> = ({
     });
     return map;
   }, [generatedTemplates]);
-
-  // Load existing Supabase config if any
-  useEffect(() => {
-    const cfg = getStoredSupabaseConfig();
-    if (cfg) {
-      setSupabaseUrlInput(cfg.url);
-      setSupabaseKeyInput(cfg.anonKey);
-    }
-  }, []);
-
-  // Handle saving Supabase config and testing connection
-  const handleSaveSupabaseConfig = async () => {
-    if (!supabaseUrlInput.trim() || !supabaseKeyInput.trim()) {
-      setSupabaseStatusMsg('URL과 Anon Key를 모두 입력해주세요.');
-      return;
-    }
-
-    try {
-      saveStoredSupabaseConfig({
-        url: supabaseUrlInput.trim(),
-        anonKey: supabaseKeyInput.trim(),
-      });
-      const client = getSupabaseClient();
-      if (!client) {
-        setSupabaseStatusMsg('클라이언트 초기화에 실패했습니다.');
-        return;
-      }
-
-      setSupabaseStatusMsg('연결 테스트 중...');
-      // Simple ping to Supabase Auth or standard API
-      const { data, error } = await client.auth.getSession();
-      if (error && error.message && !error.message.includes('Auth session missing')) {
-        setSupabaseStatusMsg(`연결 확인 (경고: ${error.message})`);
-      } else {
-        setSupabaseStatusMsg('✅ Supabase 연결 설정이 성공적으로 저장되었습니다!');
-      }
-
-      setTimeout(() => {
-        setIsSupabaseModalOpen(false);
-        setSupabaseStatusMsg(null);
-      }, 1200);
-    } catch (err: any) {
-      setSupabaseStatusMsg(`오류 발생: ${err?.message || '연결 실패'}`);
-    }
-  };
-
-  // Sync data to Supabase (documents & self-audit summary)
-  const handleSyncToSupabase = async () => {
-    const client = getSupabaseClient();
-    if (!client) {
-      setIsSupabaseModalOpen(true);
-      return;
-    }
-
-    setIsSyncing(true);
-    setSyncResult(null);
-
-    try {
-      const payload = {
-        company_name: company.companyName,
-        biz_number: company.bizNumber,
-        synced_at: new Date().toISOString(),
-        items_count: SELF_AUDIT_GUIDE_ITEMS.length,
-        selected_options: selectedOptions,
-        groups_data: groups,
-      };
-
-      // Try upserting into 'innobiz_self_audit_records' table
-      const { error } = await client
-        .from('innobiz_self_audit_records')
-        .upsert(
-          [
-            {
-              biz_number: company.bizNumber,
-              company_name: company.companyName,
-              data: payload,
-              updated_at: new Date().toISOString(),
-            },
-          ],
-          { onConflict: 'biz_number' }
-        );
-
-      if (error) {
-        // If table does not exist, provide helpful feedback
-        if (error.code === '42P01' || error.message.includes('relation "innobiz_self_audit_records" does not exist')) {
-          setSyncResult({
-            success: false,
-            message: 'Supabase에 "innobiz_self_audit_records" 테이블이 없습니다. SQL 편집기에서 테이블 생성 후 다시 시도해주세요.',
-          });
-        } else {
-          setSyncResult({
-            success: false,
-            message: `동기화 오류: ${error.message}`,
-          });
-        }
-      } else {
-        setSyncResult({
-          success: true,
-          message: 'Supabase에 자가진단 및 대응서류 데이터가 성공적으로 동기화되었습니다.',
-        });
-      }
-    } catch (e: any) {
-      setSyncResult({
-        success: false,
-        message: `클라우드 동기화 실패: ${e?.message || '네트워크 오류'}`,
-      });
-    } finally {
-      setIsSyncing(false);
-      setTimeout(() => {
-        setSyncResult(null);
-      }, 6000);
-    }
-  };
 
   // Download a single document as Word (.doc)
   const handleDownloadSingleDoc = async (item: SelfAuditGuideItem) => {
@@ -352,8 +224,6 @@ ${item.optionalDocs && item.optionalDocs.length > 0 ? `\n### 4. 보조 및 가�
     return map;
   }, [searchQuery]);
 
-  const isConfiguredSupabase = !!getStoredSupabaseConfig();
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-slate-900/60 backdrop-blur-xs overflow-y-auto">
       <div className="bg-white rounded-2xl max-w-6xl w-full p-5 sm:p-7 shadow-2xl border border-slate-100 my-4 max-h-[94vh] flex flex-col">
@@ -378,23 +248,8 @@ ${item.optionalDocs && item.optionalDocs.length > 0 ? `\n### 4. 보조 및 가�
             </div>
           </div>
 
-          {/* Right Action: Supabase cloud sync & Close button */}
+          {/* Right Action: Close button */}
           <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={handleSyncToSupabase}
-              disabled={isSyncing}
-              title="Supabase 클라우드 데이터 연동 및 백업"
-              className={`px-3 py-1.5 text-xs font-semibold rounded-lg border flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs ${
-                isConfiguredSupabase
-                  ? 'bg-emerald-50 text-emerald-700 border-emerald-300 hover:bg-emerald-100'
-                  : 'bg-slate-50 text-slate-700 border-slate-300 hover:bg-slate-100'
-              }`}
-            >
-              <Database className="w-3.5 h-3.5" />
-              <span>{isSyncing ? '동기화 중...' : isConfiguredSupabase ? 'Supabase 연동' : 'Supabase 설정'}</span>
-            </button>
-
             <button
               type="button"
               onClick={onClose}
@@ -405,29 +260,6 @@ ${item.optionalDocs && item.optionalDocs.length > 0 ? `\n### 4. 보조 및 가�
             </button>
           </div>
         </div>
-
-        {/* Sync Result Alert Banner */}
-        {syncResult && (
-          <div
-            className={`mt-3 p-3 rounded-lg text-xs font-medium flex items-center justify-between border ${
-              syncResult.success
-                ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
-                : 'bg-amber-50 border-amber-200 text-amber-800'
-            }`}
-          >
-            <div className="flex items-center gap-2">
-              {syncResult.success ? <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" /> : <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />}
-              <span>{syncResult.message}</span>
-            </div>
-            <button
-              type="button"
-              onClick={() => setSyncResult(null)}
-              className="text-slate-400 hover:text-slate-600 font-bold"
-            >
-              ×
-            </button>
-          </div>
-        )}
 
         {/* Filters Bar: Part Tabs + Search Box */}
         <div className="py-3 flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-100">
@@ -641,94 +473,6 @@ ${item.optionalDocs && item.optionalDocs.length > 0 ? `\n### 4. 보조 및 가�
           </div>
         </div>
       </div>
-
-      {/* Supabase Connection Setup Modal */}
-      {isSupabaseModalOpen && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-200">
-              <div className="flex items-center gap-2">
-                <Database className="w-5 h-5 text-emerald-600" />
-                <h3 className="text-base font-bold text-slate-900">Supabase 데이터 연동 설정</h3>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsSupabaseModalOpen(false)}
-                className="p-1 text-slate-400 hover:text-slate-600 rounded-lg"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="py-4 space-y-4 text-xs text-slate-600">
-              <p className="leading-relaxed">
-                Supabase 프로젝트의 <strong>Project URL</strong>과 <strong>Anon Public Key</strong>를 설정하여 
-                자가진단 현황 및 자료실 서류 데이터를 클라우드에 영구 백업·연동할 수 있습니다.
-              </p>
-
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">
-                  Supabase Project URL
-                </label>
-                <input
-                  type="text"
-                  value={supabaseUrlInput}
-                  onChange={(e) => setSupabaseUrlInput(e.target.value)}
-                  placeholder="https://xyzcompany.supabase.co"
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono text-xs"
-                />
-              </div>
-
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">
-                  Supabase Anon Public API Key
-                </label>
-                <input
-                  type="password"
-                  value={supabaseKeyInput}
-                  onChange={(e) => setSupabaseKeyInput(e.target.value)}
-                  placeholder="eyJh..."
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono text-xs"
-                />
-              </div>
-
-              {supabaseStatusMsg && (
-                <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-700 text-xs">
-                  {supabaseStatusMsg}
-                </div>
-              )}
-
-              <div className="p-3 bg-emerald-50/70 border border-emerald-200 rounded-lg text-emerald-900">
-                <div className="font-bold flex items-center gap-1 mb-1">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>연동 테이블 자동 매핑</span>
-                </div>
-                <p className="text-[11px] text-emerald-800">
-                  Supabase의 <code>innobiz_self_audit_records</code> 테이블과 실시간으로 매핑되어 자가진단 변경사항 및 문서 편철 상태를 안전하게 저장합니다.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-200">
-              <button
-                type="button"
-                onClick={() => setIsSupabaseModalOpen(false)}
-                className="px-3.5 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
-              >
-                취소
-              </button>
-              <button
-                type="button"
-                onClick={handleSaveSupabaseConfig}
-                className="px-4 py-1.5 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs"
-              >
-                <Save className="w-3.5 h-3.5" />
-                <span>설정 저장 및 연결</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

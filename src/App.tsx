@@ -19,6 +19,7 @@ import { CompanyProfileModal } from './components/CompanyProfileModal';
 import { AutoDocGeneratorModal } from './components/AutoDocGeneratorModal';
 import { ExcelAiConverterModal } from './components/ExcelAiConverterModal';
 import { InnoBizApplicationModal } from './components/InnoBizApplicationModal';
+import { SupabaseSyncModal } from './components/SupabaseSyncModal';
 import { SelfAuditGuidePage } from './components/SelfAuditGuidePage';
 import { AuditStatisticsPage } from './components/AuditStatisticsPage';
 import { PortalSelectionPage } from './components/PortalSelectionPage';
@@ -37,7 +38,8 @@ import {
   Layers,
   Sparkles,
   FileText,
-  BarChart3
+  BarChart3,
+  Database
 } from 'lucide-react';
 
 const STORAGE_KEY = 'innobiz_document_groups_v2_sheet';
@@ -91,6 +93,7 @@ export default function App() {
   const [isAutoDocModalOpen, setIsAutoDocModalOpen] = useState(false);
   const [isExcelAiModalOpen, setIsExcelAiModalOpen] = useState(false);
   const [isInnoBizAppModalOpen, setIsInnoBizAppModalOpen] = useState(false);
+  const [isSupabaseModalOpen, setIsSupabaseModalOpen] = useState(false);
   const [autoDocInitialId, setAutoDocInitialId] = useState<string | undefined>(undefined);
   const [recentlyCreatedId, setRecentlyCreatedId] = useState<string | null>(null);
   const [showLocationGuide, setShowLocationGuide] = useState(true);
@@ -239,6 +242,7 @@ export default function App() {
         }}
         onOpenExcelAiModal={() => setIsExcelAiModalOpen(true)}
         onOpenInnoBizAppModal={() => setIsInnoBizAppModalOpen(true)}
+        onOpenSupabaseModal={() => setIsSupabaseModalOpen(true)}
       />
 
       {/* Main Container / View Switching: Dashboard vs Guide vs Stats */}
@@ -362,6 +366,16 @@ export default function App() {
                 >
                   <FileCheck2 className="w-4 h-4 text-slate-300" />
                   <span>실사 점검표</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setIsSupabaseModalOpen(true)}
+                  className="px-3.5 py-2 bg-emerald-600/80 hover:bg-emerald-600 text-white text-xs sm:text-sm font-bold rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs border border-emerald-400/40"
+                  title="Supabase 클라우드 데이터베이스 연동 및 실시간 백업"
+                >
+                  <Database className="w-4 h-4 text-emerald-200" />
+                  <span>🗄️ Supabase 클라우드 DB 연동</span>
                 </button>
               </div>
             </div>
@@ -628,6 +642,13 @@ export default function App() {
         onClose={() => setIsInnoBizAppModalOpen(false)}
         company={company}
         onUpdateCompany={(updated) => setCompany(updated)}
+      />
+
+      <SupabaseSyncModal
+        isOpen={isSupabaseModalOpen}
+        onClose={() => setIsSupabaseModalOpen(false)}
+        company={company}
+        groups={groups}
       />
     </div>
   );

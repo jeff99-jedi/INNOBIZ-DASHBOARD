@@ -150,6 +150,10 @@ export const PortalSelectionPage: React.FC<PortalSelectionPageProps> = ({
                   <CheckCircle2 className="w-4 h-4 text-indigo-600 shrink-0" />
                   <span><strong>실사 종합 점검표</strong> 인쇄 및 보고서 내보내기</span>
                 </div>
+                <div className="flex items-center gap-2 font-medium">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span><strong>Supabase 클라우드 연동</strong> (실시간 원격 DB 백업 및 다중기기 동기화)</span>
+                </div>
               </div>
             </div>
 
