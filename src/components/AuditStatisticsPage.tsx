@@ -1011,8 +1011,6 @@ export const AuditStatisticsPage: React.FC<AuditStatisticsPageProps> = ({
                   <th className="py-2.5 px-3.5 text-center" style={{ width: '120.172px' }}>선택 보기 (등급)</th>
                   <th className="py-2.5 px-3 text-center w-20">모의 득점</th>
                   <th className="py-2.5 px-3 text-center w-20">달성률</th>
-                  <th className="py-2.5 px-3 text-center w-24">서류 점검</th>
-                  <th className="py-2.5 px-3 text-center w-16 print:hidden">링크</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -1068,32 +1066,6 @@ export const AuditStatisticsPage: React.FC<AuditStatisticsPageProps> = ({
                           </div>
                           <span className="text-[10px] text-slate-600 font-semibold">{detail.rate}%</span>
                         </div>
-                      </td>
-                      <td className="py-3 px-3 text-center">
-                        {detail.isCompleted ? (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
-                            <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                            준비완료
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 text-[10px] text-slate-400 bg-slate-100 px-2 py-0.5 rounded-md">
-                            대응중
-                          </span>
-                        )}
-                      </td>
-                      <td className="py-3 px-3 text-center print:hidden">
-                        {detail.item.linkedGroupId && onOpenGroupDetail ? (
-                          <button
-                            type="button"
-                            onClick={() => onOpenGroupDetail(detail.item.linkedGroupId!)}
-                            className="p-1 text-slate-400 hover:text-blue-600 transition-colors cursor-pointer"
-                            title="연계 문서 그룹 열기"
-                          >
-                            <Layers className="w-4 h-4 inline" />
-                          </button>
-                        ) : (
-                          <span className="text-slate-300">-</span>
-                        )}
                       </td>
                     </tr>
                   );
