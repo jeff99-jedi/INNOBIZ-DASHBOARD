@@ -242,7 +242,6 @@ export default function App() {
         }}
         onOpenExcelAiModal={() => setIsExcelAiModalOpen(true)}
         onOpenInnoBizAppModal={() => setIsInnoBizAppModalOpen(true)}
-        onOpenSupabaseModal={() => setIsSupabaseModalOpen(true)}
       />
 
       {/* Main Container / View Switching: Dashboard vs Guide vs Stats */}

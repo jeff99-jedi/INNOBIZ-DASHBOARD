@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, FolderDown, RotateCcw, Search, ShieldCheck, HelpCircle, Building2, Sparkles, FileSpreadsheet, BookOpen, Layers, BarChart3, Home, Database } from 'lucide-react';
+import { Plus, FolderDown, RotateCcw, Search, ShieldCheck, HelpCircle, Building2, Sparkles, FileSpreadsheet, BookOpen, Layers, BarChart3, Home } from 'lucide-react';
 import { CompanyProfile } from '../types';
 
 interface HeaderProps {
@@ -17,7 +17,6 @@ interface HeaderProps {
   onOpenAutoDocModal: () => void;
   onOpenExcelAiModal?: () => void;
   onOpenInnoBizAppModal?: () => void;
-  onOpenSupabaseModal?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -35,7 +34,6 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenAutoDocModal,
   onOpenExcelAiModal,
   onOpenInnoBizAppModal,
-  onOpenSupabaseModal,
 }) => {
   return (
     <header className="border-b border-slate-200 bg-white/95 backdrop-blur-md sticky top-0 z-30" id="main-header">
@@ -137,19 +135,6 @@ export const Header: React.FC<HeaderProps> = ({
                   className="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                 />
               </div>
-            )}
-
-            {onOpenSupabaseModal && (
-              <button
-                id="btn-supabase-admin-header"
-                type="button"
-                onClick={onOpenSupabaseModal}
-                title="Supabase 클라우드 데이터베이스 연동 및 동기화"
-                className="text-xs font-semibold py-1.5 px-2.5 rounded-lg border border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 flex items-center gap-1.5 cursor-pointer transition-colors shadow-2xs"
-              >
-                <Database className="w-3.5 h-3.5 text-emerald-600" />
-                <span className="hidden sm:inline">Supabase 연동</span>
-              </button>
             )}
 
             <button
