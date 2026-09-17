@@ -373,16 +373,20 @@ export const AuditStatisticsPage: React.FC<AuditStatisticsPageProps> = ({
           <div className="sm:col-span-2 lg:col-span-2 p-4 bg-white border border-slate-200 rounded-2xl shadow-xs flex items-center justify-between gap-4">
             <div className="flex items-center gap-3.5">
               <div
-                className={`w-14 h-14 rounded-xl flex flex-col items-center justify-center font-black text-white shrink-0 shadow-xs ${
+                className={`min-w-[72px] px-2.5 py-1.5 rounded-xl flex flex-col items-center justify-center font-black text-white shrink-0 shadow-xs select-none ${
                   analytics.totalScored === 0
-                    ? 'bg-slate-500'
+                    ? 'bg-slate-600'
                     : analytics.isPassed
                     ? 'bg-emerald-600'
                     : 'bg-rose-600'
                 }`}
               >
-                <span className="text-xl leading-none">{analytics.totalScored}</span>
-                <span className="text-[10px] mt-0.5 opacity-80">/ 1,000점</span>
+                <span className="text-xl sm:text-2xl font-black leading-tight tracking-tight">
+                  {analytics.totalScored}
+                </span>
+                <span className="text-[11px] font-semibold text-white/90 leading-tight tracking-tight whitespace-nowrap">
+                  / 1,000점
+                </span>
               </div>
               <div>
                 <div className="flex items-center gap-1.5">
