@@ -148,6 +148,8 @@ export interface SelfAuditGuideItem {
   question: string; // 질문 (자가진단 질문 및 심사원 체크 포인트)
   questionType?: 'single_choice' | 'multi_checkbox' | 'numeric_input'; // 포털 문항 유형
   subChecklistItems?: string[]; // 포털 내 세부 체크박스 항목 (중복체크 시 ①~⑦ 등)
+  isNegativeChecklist?: boolean; // 결격/부정 항목 체크리스트 (해당항목 없음이 0건=A등급 최고점)
+  fileDownloadLabel?: string; // [파일 다운받기] 버튼 레이블 (예: 평균 교육평가 훈련비용 파일 다운받기)
   portalDescription?: string; // [설명] 버튼 팝업 안내 내용
   evaluationGuideline?: string; // [평가지침] (PDF 원문 평가방법 및 산출기준)
   considerations?: string; // [고려사항] (PDF 원문 고려사항)

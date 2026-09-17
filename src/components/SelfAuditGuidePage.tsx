@@ -30,6 +30,11 @@ import {
   BarChart3,
   ExternalLink,
   Target,
+  Info,
+  FileDown,
+  X,
+  Square,
+  Download,
 } from 'lucide-react';
 import { CompanyProfile, DocumentGroup, SelfAuditGuideItem, SelfAuditOption } from '../types';
 import { SELF_AUDIT_PARTS, SELF_AUDIT_GUIDE_ITEMS } from '../data/selfAuditGuideData';
@@ -46,6 +51,102 @@ interface SelfAuditGuidePageProps {
 
 const CHECK_STORAGE_KEY = 'innobiz_self_audit_checklist_v2';
 const OPTIONS_STORAGE_KEY = 'innobiz_self_audit_selected_options_v2';
+const CHECKBOXES_STORAGE_KEY = 'innobiz_self_audit_checkboxes_v2';
+
+// Helper to compute standard option number (1~5) based on checked sub-items count
+export function computeOptionFromCount(item: SelfAuditGuideItem, count: number, hasNoneChecked: boolean): number {
+  if (item.isNegativeChecklist) {
+    if (hasNoneChecked || count === 0) return 1; // A. 해당사항 없음 (20점/15점 만점)
+    if (count === 1) return 2; // B. 1개 항목 해당
+    if (count === 2) return 3; // C. 2개 항목 해당
+    if (count === 3) return 4; // D. 3개 항목 해당
+    return 5; // E. 4개 항목 이상 해당
+  }
+
+  const total = item.subChecklistItems?.length || 5;
+
+  if (total >= 7) {
+    if (count >= 6) return 1;
+    if (count === 5) return 2;
+    if (count === 4) return 3;
+    if (count === 3) return 4;
+    return 5;
+  }
+
+  if (total === 6) {
+    if (count >= 6) return 1;
+    if (count === 5) return 2;
+    if (count === 4) return 3;
+    if (count === 3) return 4;
+    return 5;
+  }
+
+  if (total === 5) {
+    if (count >= 5) return 1;
+    if (count === 4) return 2;
+    if (count === 3) return 3;
+    if (count === 2) return 4;
+    return 5;
+  }
+
+  if (total === 4) {
+    if (count >= 4) return 1;
+    if (count === 3) return 2;
+    if (count === 2) return 3;
+    if (count === 1) return 4;
+    return 5;
+  }
+
+  if (count >= total) return 1;
+  if (count >= total - 1) return 2;
+  if (count >= total - 2) return 3;
+  if (count >= 1) return 4;
+  return 5;
+}
+
+// Helper to get corresponding checkboxes indices for a chosen option number (1~5)
+export function getCheckboxesForOption(item: SelfAuditGuideItem, optionNumber: number): number[] {
+  const total = item.subChecklistItems?.length || 0;
+  if (item.isNegativeChecklist) {
+    if (optionNumber === 1) return [-1]; // 해당사항 없음
+    if (optionNumber === 2) return [0]; // 1개 항목
+    if (optionNumber === 3) return [0, 1]; // 2개 항목
+    if (optionNumber === 4) return [0, 1, 2]; // 3개 항목
+    return [0, 1, 2, 3]; // 4개 항목 이상
+  }
+
+  if (total >= 7) {
+    if (optionNumber === 1) return [0, 1, 2, 3, 4, 5];
+    if (optionNumber === 2) return [0, 1, 2, 3, 4];
+    if (optionNumber === 3) return [0, 1, 2, 3];
+    if (optionNumber === 4) return [0, 1, 2];
+    return [-1];
+  }
+  if (total === 6) {
+    if (optionNumber === 1) return [0, 1, 2, 3, 4, 5];
+    if (optionNumber === 2) return [0, 1, 2, 3, 4];
+    if (optionNumber === 3) return [0, 1, 2, 3];
+    if (optionNumber === 4) return [0, 1, 2];
+    return [-1];
+  }
+  if (total === 5) {
+    if (optionNumber === 1) return [0, 1, 2, 3, 4];
+    if (optionNumber === 2) return [0, 1, 2, 3];
+    if (optionNumber === 3) return [0, 1, 2];
+    if (optionNumber === 4) return [0, 1];
+    return [-1];
+  }
+  if (total === 4) {
+    if (optionNumber === 1) return [0, 1, 2, 3];
+    if (optionNumber === 2) return [0, 1, 2];
+    if (optionNumber === 3) return [0, 1];
+    if (optionNumber === 4) return [0];
+    return [-1];
+  }
+
+  const indices = Array.from({ length: Math.max(0, total - optionNumber + 1) }, (_, i) => i);
+  return indices.length > 0 ? indices : [-1];
+}
 
 export const SelfAuditGuidePage: React.FC<SelfAuditGuidePageProps> = ({
   company,
@@ -91,6 +192,23 @@ export const SelfAuditGuidePage: React.FC<SelfAuditGuidePageProps> = ({
     return {};
   });
 
+  // Track multi_checkbox checked indices (e.g., [0, 1, 2] or [-1] for "해당항목없음.")
+  const [selectedCheckboxes, setSelectedCheckboxes] = useState<Record<string, number[]>>(() => {
+    try {
+      const saved = localStorage.getItem(CHECKBOXES_STORAGE_KEY);
+      if (saved) return JSON.parse(saved);
+    } catch (e) {
+      console.error('Failed to load checkboxes:', e);
+    }
+    return {};
+  });
+
+  // Modal item for [설명] button
+  const [modalItem, setModalItem] = useState<SelfAuditGuideItem | null>(null);
+
+  // Modal for [평균 교육평가 훈련비용 파일 다운받기]
+  const [showTrainingCostModal, setShowTrainingCostModal] = useState(false);
+
   // Track active item for right column inspection (defaults to first item)
   const [activeItemId, setActiveItemId] = useState<string>(() => {
     return SELF_AUDIT_GUIDE_ITEMS[0]?.id || 'part1_1_1';
@@ -117,6 +235,15 @@ export const SelfAuditGuidePage: React.FC<SelfAuditGuidePageProps> = ({
       console.error('Failed to persist options:', e);
     }
   }, [selectedOptions]);
+
+  // Persist selected checkboxes
+  useEffect(() => {
+    try {
+      localStorage.setItem(CHECKBOXES_STORAGE_KEY, JSON.stringify(selectedCheckboxes));
+    } catch (e) {
+      console.error('Failed to persist checkboxes:', e);
+    }
+  }, [selectedCheckboxes]);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -151,30 +278,93 @@ export const SelfAuditGuidePage: React.FC<SelfAuditGuidePageProps> = ({
     });
   };
 
-  // Option selection handler
+  // Option selection handler (syncs checkboxes if multi_checkbox)
   const handleSelectOption = (itemId: string, optionNumber: number) => {
     setSelectedOptions((prev) => ({
       ...prev,
       [itemId]: optionNumber,
     }));
+
+    const item = SELF_AUDIT_GUIDE_ITEMS.find((i) => i.id === itemId);
+    if (item && item.questionType === 'multi_checkbox' && item.subChecklistItems) {
+      const syncedCheckboxes = getCheckboxesForOption(item, optionNumber);
+      setSelectedCheckboxes((prev) => ({
+        ...prev,
+        [itemId]: syncedCheckboxes,
+      }));
+    }
+  };
+
+  // Toggle "해당항목없음." (-1) for multi_checkbox
+  const handleToggleNone = (itemId: string) => {
+    const item = SELF_AUDIT_GUIDE_ITEMS.find((i) => i.id === itemId);
+    if (!item) return;
+
+    const current = selectedCheckboxes[itemId] || [];
+    const isCurrentlyNone = current.includes(-1);
+
+    if (isCurrentlyNone) {
+      setSelectedCheckboxes((prev) => ({ ...prev, [itemId]: [] }));
+      const optNum = computeOptionFromCount(item, 0, false);
+      setSelectedOptions((prev) => ({ ...prev, [itemId]: optNum }));
+    } else {
+      setSelectedCheckboxes((prev) => ({ ...prev, [itemId]: [-1] }));
+      const optNum = computeOptionFromCount(item, 0, true);
+      setSelectedOptions((prev) => ({ ...prev, [itemId]: optNum }));
+      const matchedOpt = item.options.find((o) => o.optionNumber === optNum);
+      showToast(`${item.evalItemName}: '해당항목없음.' 선택 (${matchedOpt?.optionLabel})`);
+    }
+  };
+
+  // Toggle a single sub-item checkbox (0, 1, 2...) for multi_checkbox
+  const handleToggleSubCheck = (itemId: string, subIndex: number) => {
+    const item = SELF_AUDIT_GUIDE_ITEMS.find((i) => i.id === itemId);
+    if (!item) return;
+
+    const current = (selectedCheckboxes[itemId] || []).filter((idx) => idx !== -1);
+    const exists = current.includes(subIndex);
+    const updated = exists ? current.filter((i) => i !== subIndex) : [...current, subIndex];
+
+    setSelectedCheckboxes((prev) => ({ ...prev, [itemId]: updated }));
+    const count = updated.length;
+    const optNum = computeOptionFromCount(item, count, false);
+    setSelectedOptions((prev) => ({ ...prev, [itemId]: optNum }));
+  };
+
+  // Reset checkboxes for a single item (체크해제 button)
+  const handleResetItemCheckboxes = (itemId: string) => {
+    const item = SELF_AUDIT_GUIDE_ITEMS.find((i) => i.id === itemId);
+    if (!item) return;
+    setSelectedCheckboxes((prev) => ({ ...prev, [itemId]: [] }));
+    const lowestOpt = 5;
+    setSelectedOptions((prev) => ({ ...prev, [itemId]: lowestOpt }));
+    showToast(`${item.evalItemName}: 모든 체크가 해제되었습니다.`);
   };
 
   // Quick Action 1: Fill all items with recommended maximum points (1,000점)
   const handleApplyRecommendedAll = () => {
     const recMap: Record<string, number> = {};
+    const chkMap: Record<string, number[]> = {};
     SELF_AUDIT_GUIDE_ITEMS.forEach((item) => {
-      recMap[item.id] = item.defaultSelectedOptionNumber || 1;
+      const defOpt = item.defaultSelectedOptionNumber || 1;
+      recMap[item.id] = defOpt;
+      if (item.questionType === 'multi_checkbox' && item.subChecklistItems) {
+        chkMap[item.id] = getCheckboxesForOption(item, defOpt);
+      }
     });
     setSelectedOptions(recMap);
-    showToast(`전체 ${SELF_AUDIT_GUIDE_ITEMS.length}개 평가지표에 최적 권장 옵션이 적용되어 모의 총점 1,000점이 계산되었습니다.`);
+    setSelectedCheckboxes(chkMap);
+    showToast(`전체 ${SELF_AUDIT_GUIDE_ITEMS.length}개 평가지표에 최적 권장 옵션 및 세부 체크박스가 일괄 적용되었습니다. (총점 1,000점)`);
   };
 
   // Quick Action 2: Reset options to initial 0 points
   const handleResetOptions = () => {
     if (window.confirm('모의 채점 선택 내역을 모두 초기화(0점)하시겠습니까?')) {
       setSelectedOptions({});
+      setSelectedCheckboxes({});
       localStorage.removeItem(OPTIONS_STORAGE_KEY);
-      showToast('모의 채점 선택이 0점으로 초기화되었습니다.');
+      localStorage.removeItem(CHECKBOXES_STORAGE_KEY);
+      showToast('모의 채점 및 체크박스 선택이 0점으로 초기화되었습니다.');
     }
   };
 
@@ -714,15 +904,169 @@ export const SelfAuditGuidePage: React.FC<SelfAuditGuidePageProps> = ({
                     </div>
                   </div>
 
-                  {/* Options Selection Radio Grid (Always visible for immediate simulation) */}
-                  <div className="px-5 sm:px-6 pb-4 pt-1 bg-slate-50/60 border-t border-slate-100">
+                  {/* =========================================================================
+                      OFFICIAL INNOBIZ MULTI-CHECKBOX PORTAL TABLE (다중선택 자가진단 인터페이스)
+                     ========================================================================= */}
+                  {item.questionType === 'multi_checkbox' && item.subChecklistItems && item.subChecklistItems.length > 0 && (
+                    <div className="px-5 sm:px-6 pt-3.5 pb-4 bg-slate-50/80 border-t border-slate-200">
+                      {/* Top Action Bar: Item Title, [설명] button, (중복체크 가능), and [체크해제] button */}
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 mb-2.5 pb-2.5 border-b border-slate-200">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="font-extrabold text-slate-900 text-xs sm:text-sm tracking-tight">
+                            {item.evalItemCode} {item.evalItemName}
+                          </span>
+                          {item.portalDescription && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setModalItem(item);
+                              }}
+                              className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded border border-slate-300 bg-white hover:bg-slate-100 text-slate-700 font-semibold transition-colors cursor-pointer shadow-2xs"
+                              title="공식 자가진단 문항 평가지침 및 설명 보기"
+                            >
+                              <Info className="w-3 h-3 text-blue-600" />
+                              <span>[설명]</span>
+                            </button>
+                          )}
+                          <span className="text-xs font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded border border-rose-200/80">
+                            (중복체크 가능)
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-2 self-end sm:self-auto">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleResetItemCheckboxes(item.id);
+                            }}
+                            className="inline-flex items-center gap-1 text-xs px-3 py-1 rounded-md font-semibold text-white bg-[#6c757d] hover:bg-[#5a6268] active:bg-[#4e555b] transition-colors cursor-pointer shadow-2xs"
+                            title="이 문항의 모든 체크박스를 해제합니다"
+                          >
+                            <RotateCcw className="w-3 h-3" />
+                            <span>체크해제</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Official InnoBiz Checklist Table Grid */}
+                      <div className="border border-slate-300 rounded-lg overflow-hidden bg-white shadow-2xs">
+                        {/* Row 1: 해당항목없음. */}
+                        <div
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleToggleNone(item.id);
+                            setActiveItemId(item.id);
+                          }}
+                          className={`flex items-center justify-between px-4 py-2.5 border-b border-slate-200 cursor-pointer transition-colors ${
+                            selectedCheckboxes[item.id]?.includes(-1)
+                              ? 'bg-blue-50/90 text-blue-900 font-bold'
+                              : 'hover:bg-slate-50 text-slate-700'
+                          }`}
+                        >
+                          <span className="text-xs sm:text-sm font-medium">
+                            해당항목없음.
+                          </span>
+                          <input
+                            type="checkbox"
+                            checked={selectedCheckboxes[item.id]?.includes(-1) || false}
+                            onChange={() => {}} // Controlled via parent div click
+                            className="w-4 h-4 rounded text-blue-600 border-slate-300 focus:ring-blue-500 cursor-pointer pointer-events-none"
+                          />
+                        </div>
+
+                        {/* Rows 2..N: Sub Checklist Items ① ~ ⑦ */}
+                        {item.subChecklistItems.map((subText, sIdx) => {
+                          const isChecked = selectedCheckboxes[item.id]?.includes(sIdx) || false;
+
+                          return (
+                            <div
+                              key={sIdx}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleToggleSubCheck(item.id, sIdx);
+                                setActiveItemId(item.id);
+                              }}
+                              className={`flex items-start justify-between gap-3 px-4 py-2.5 border-b border-slate-200 last:border-b-0 cursor-pointer transition-colors ${
+                                isChecked
+                                  ? 'bg-blue-50/60 text-slate-900 font-medium'
+                                  : 'hover:bg-slate-50/80 text-slate-700'
+                              }`}
+                            >
+                              <div className="flex-1 text-xs sm:text-sm leading-relaxed">
+                                <span>{subText}</span>
+                                {item.fileDownloadLabel && sIdx === 2 && (
+                                  <div className="mt-1">
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setShowTrainingCostModal(true);
+                                      }}
+                                      className="inline-flex items-center gap-1 text-xs text-blue-700 bg-blue-50 hover:bg-blue-100 px-2 py-1 rounded border border-blue-200 font-semibold transition-colors"
+                                    >
+                                      <FileDown className="w-3.5 h-3.5 text-blue-600" />
+                                      <span>[{item.fileDownloadLabel}]</span>
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                              <input
+                                type="checkbox"
+                                checked={isChecked}
+                                onChange={() => {}} // Controlled via parent div click
+                                className="w-4 h-4 rounded text-blue-600 border-slate-300 focus:ring-blue-500 cursor-pointer pointer-events-none mt-0.5 shrink-0"
+                              />
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {/* Real-time Status and Score Bar */}
+                      <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2 text-xs bg-slate-100/90 rounded-lg px-3.5 py-2 border border-slate-200">
+                        <div className="flex items-center gap-2">
+                          <CheckSquare className="w-4 h-4 text-blue-600 shrink-0" />
+                          {item.isNegativeChecklist ? (
+                            selectedCheckboxes[item.id]?.includes(-1) || (selectedCheckboxes[item.id]?.filter((i) => i >= 0).length || 0) === 0 ? (
+                              <span className="text-emerald-700 font-bold">
+                                ✓ 결격·부정 항목 없음: 건전 경영 입증 (최고 만점 획득)
+                              </span>
+                            ) : (
+                              <span className="text-rose-700 font-bold">
+                                ⚠️ {selectedCheckboxes[item.id]?.filter((i) => i >= 0).length || 0}개 부정항목 해당 (감점 적용)
+                              </span>
+                            )
+                          ) : (
+                            <span className="text-slate-700 font-medium">
+                              충족 항목:{' '}
+                              <strong className="text-blue-700 font-bold text-sm">
+                                {selectedCheckboxes[item.id]?.filter((i) => i >= 0).length || 0}개
+                              </strong>{' '}
+                              / {item.subChecklistItems.length}개
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="text-xs text-slate-600 font-medium">
+                          채점 등급 연동:{' '}
+                          <span className="font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
+                            {chosenOption ? `${chosenOption.grade}등급 (${chosenOption.points}점)` : '선택 중'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Options Selection Radio Grid (Always visible for simulation & 2-way sync) */}
+                  <div className="px-5 sm:px-6 pb-4 pt-2 bg-slate-50/60 border-t border-slate-100">
                     <div className="flex items-center justify-between text-xs font-semibold text-slate-700 mb-2">
                       <span className="flex items-center gap-1.5">
                         <SlidersHorizontal className="w-3.5 h-3.5 text-blue-600" />
-                        <span>모의 채점 보기 선택 (1~5등급)</span>
+                        <span>모의 채점 등급 보기 (A~E등급)</span>
                       </span>
-                      <span className="text-xs text-slate-500 font-normal">
-                        클릭하여 해당 등급을 선택하면 점수와 우측 전략이 실시간 갱신됩니다.
+                      <span className="text-xs text-slate-500 font-normal hidden sm:inline">
+                        등급 버튼을 직접 클릭하거나 위의 체크박스를 선택하면 양방향으로 동기화됩니다.
                       </span>
                     </div>
 
@@ -1004,6 +1348,217 @@ export const SelfAuditGuidePage: React.FC<SelfAuditGuidePageProps> = ({
 
       </div>
     </main>
+
+    {/* =========================================================================
+        MODAL 1: 자가진단 문항 평가지침 및 설명 모달 ([설명] 클릭 시)
+       ========================================================================= */}
+    {modalItem && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 animate-fadeIn">
+        <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto border border-slate-200">
+          <div className="p-5 border-b border-slate-100 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="p-1.5 rounded-lg bg-blue-50 text-blue-600">
+                <Info className="w-5 h-5" />
+              </span>
+              <div>
+                <span className="text-xs font-bold text-blue-700">{modalItem.evalItemCode}</span>
+                <h3 className="text-base font-bold text-slate-900">{modalItem.evalItemName} 설명</h3>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setModalItem(null)}
+              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          <div className="p-5 space-y-4 text-xs sm:text-sm text-slate-700 leading-relaxed">
+            <div>
+              <h4 className="font-bold text-slate-900 mb-1 flex items-center gap-1.5">
+                <HelpCircle className="w-4 h-4 text-blue-600" />
+                <span>평가 질문</span>
+              </h4>
+              <p className="bg-slate-50 p-3 rounded-xl border border-slate-200 text-slate-800 font-medium">
+                {modalItem.question}
+              </p>
+            </div>
+
+            {modalItem.portalDescription && (
+              <div>
+                <h4 className="font-bold text-slate-900 mb-1 flex items-center gap-1.5">
+                  <BookOpen className="w-4 h-4 text-indigo-600" />
+                  <span>공식 포털 항목 해설</span>
+                </h4>
+                <p className="bg-indigo-50/60 p-3 rounded-xl border border-indigo-100 text-indigo-950">
+                  {modalItem.portalDescription}
+                </p>
+              </div>
+            )}
+
+            <div>
+              <h4 className="font-bold text-slate-900 mb-1 flex items-center gap-1.5">
+                <CheckSquare className="w-4 h-4 text-emerald-600" />
+                <span>현장실사 평가지침 (체크포인트)</span>
+              </h4>
+              <p className="bg-slate-50 p-3 rounded-xl border border-slate-200 text-slate-700 whitespace-pre-line">
+                {modalItem.evaluationGuideline}
+              </p>
+            </div>
+
+            <div>
+              <h4 className="font-bold text-slate-900 mb-1 flex items-center gap-1.5">
+                <Lightbulb className="w-4 h-4 text-amber-600" />
+                <span>실무 팁 & 증빙 서류</span>
+              </h4>
+              <p className="bg-amber-50/60 p-3 rounded-xl border border-amber-200 text-amber-950 font-medium">
+                {modalItem.practicalTip}
+              </p>
+            </div>
+          </div>
+
+          <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end">
+            <button
+              type="button"
+              onClick={() => setModalItem(null)}
+              className="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-semibold transition-colors cursor-pointer"
+            >
+              닫기
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* =========================================================================
+        MODAL 2: 업종별 종업원 1인당 월평균 교육훈련비 기준표 ([파일 다운받기] 클릭 시)
+       ========================================================================= */}
+    {showTrainingCostModal && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 animate-fadeIn">
+        <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto border border-slate-200">
+          <div className="p-5 border-b border-slate-100 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="p-1.5 rounded-lg bg-blue-50 text-blue-600">
+                <FileDown className="w-5 h-5" />
+              </span>
+              <div>
+                <span className="text-xs font-bold text-blue-700">이노비즈 자가진단 참고자료</span>
+                <h3 className="text-base font-bold text-slate-900">업종별 1인당 월평균 교육훈련비 기준표</h3>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowTrainingCostModal(false)}
+              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          <div className="p-5 space-y-4 text-xs sm:text-sm text-slate-700">
+            <div className="bg-blue-50/70 p-3.5 rounded-xl border border-blue-200 text-blue-950 text-xs leading-relaxed">
+              <strong>💡 이노비즈 현장평가 판정 기준:</strong>
+              <br />
+              기업의 연간 기술인력 교육훈련비 총액을 상시 연구개발인원 수 및 12개월로 나누었을 때,
+              해당 업종의 월평균 금액보다 높으면 <strong>세부 체크항목 ③ 충족</strong>으로 인정됩니다.
+            </div>
+
+            <div className="border border-slate-200 rounded-xl overflow-hidden shadow-2xs">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="bg-slate-100 border-b border-slate-200 text-slate-700 font-bold">
+                    <th className="py-2.5 px-3">업종 분류</th>
+                    <th className="py-2.5 px-3 text-right">월평균 1인당(원)</th>
+                    <th className="py-2.5 px-3 text-right">연간 환산액(원)</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  <tr className="hover:bg-slate-50">
+                    <td className="py-2.5 px-3 font-semibold text-slate-800">제조업 (주력 업종)</td>
+                    <td className="py-2.5 px-3 text-right font-bold text-blue-700">28,400원</td>
+                    <td className="py-2.5 px-3 text-right text-slate-600">340,800원</td>
+                  </tr>
+                  <tr className="hover:bg-slate-50">
+                    <td className="py-2.5 px-3 font-semibold text-slate-800">정보통신업 (SW·IT·데이터)</td>
+                    <td className="py-2.5 px-3 text-right font-bold text-blue-700">45,200원</td>
+                    <td className="py-2.5 px-3 text-right text-slate-600">542,400원</td>
+                  </tr>
+                  <tr className="hover:bg-slate-50">
+                    <td className="py-2.5 px-3 font-semibold text-slate-800">전문, 과학 및 기술 서비스업 (R&D)</td>
+                    <td className="py-2.5 px-3 text-right font-bold text-blue-700">52,100원</td>
+                    <td className="py-2.5 px-3 text-right text-slate-600">625,200원</td>
+                  </tr>
+                  <tr className="hover:bg-slate-50">
+                    <td className="py-2.5 px-3 font-semibold text-slate-800">출판, 영상, 방송통신업</td>
+                    <td className="py-2.5 px-3 text-right font-bold text-blue-700">41,800원</td>
+                    <td className="py-2.5 px-3 text-right text-slate-600">501,600원</td>
+                  </tr>
+                  <tr className="hover:bg-slate-50">
+                    <td className="py-2.5 px-3 font-semibold text-slate-800">도매 및 소매업</td>
+                    <td className="py-2.5 px-3 text-right font-bold text-blue-700">18,900원</td>
+                    <td className="py-2.5 px-3 text-right text-slate-600">226,800원</td>
+                  </tr>
+                  <tr className="hover:bg-slate-50">
+                    <td className="py-2.5 px-3 font-semibold text-slate-800">건설업</td>
+                    <td className="py-2.5 px-3 text-right font-bold text-blue-700">22,500원</td>
+                    <td className="py-2.5 px-3 text-right text-slate-600">270,000원</td>
+                  </tr>
+                  <tr className="bg-slate-50/80 font-bold">
+                    <td className="py-2.5 px-3 text-slate-900">전 산업 기업체 평균</td>
+                    <td className="py-2.5 px-3 text-right text-indigo-700">31,500원</td>
+                    <td className="py-2.5 px-3 text-right text-slate-700">378,000원</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <p className="text-slate-400 text-xs">
+              ※ 출처: 고용노동부 기업체노동비용조사 통계 보고서 기준
+            </p>
+          </div>
+
+          <div className="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
+            <button
+              type="button"
+              onClick={() => {
+                const csvContent =
+                  '업종코드,업종명,월평균 교육훈련비(원/인),연간 환산액(원/인),비고\n' +
+                  'C,제조업 (자동차·기계·전기전자·화학 등),28400,340800,이노비즈 주력 업종\n' +
+                  'J,정보통신업 (소프트웨어 개발·SI·데이터),45200,542400,IT 소프트웨어 분야\n' +
+                  'M,전문·과학 및 기술 서비스업 (R&D·엔지니어링),52100,625200,기술서비스 및 연구개발\n' +
+                  'J58,출판·영상·방송통신업,41800,501600,미디어 및 콘텐츠\n' +
+                  'G,도매 및 소매업,18900,226800,유통 분야\n' +
+                  'F,건설업,22500,270000,시공 및 엔지니어링\n' +
+                  'ALL,전 산업 기업체 평균,31500,378000,고용노동부 노동비용조사 기준\n';
+
+                const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.setAttribute('href', url);
+                link.setAttribute('download', '이노비즈_업종별_종업원1인당_월평균_교육훈련비_기준.csv');
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                showToast('업종별 교육훈련비 기준 CSV 파일이 다운로드되었습니다.');
+              }}
+              className="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
+            >
+              <Download className="w-4 h-4" />
+              <span>CSV 파일 다운로드</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setShowTrainingCostModal(false)}
+              className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl text-xs font-semibold transition-colors cursor-pointer"
+            >
+              닫기
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
     </div>
   );
 };

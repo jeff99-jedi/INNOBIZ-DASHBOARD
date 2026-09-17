@@ -194,6 +194,7 @@ export const PART1_ITEMS: SelfAuditGuideItem[] = [
     points: 14,
     question: '기술개발인력에 대한 관리시스템 중 해당되는 항목을 체크하여 평가한다.',
     questionType: 'multi_checkbox',
+    fileDownloadLabel: '평균 교육평가 훈련비용 파일 다운받기',
     subChecklistItems: [
       '① 기술개발인력 대상 인센티브시스템(직무발명보상관리 등)이 갖추어져 있다',
       '② 최근 1년이내 기술담당 임원, 주요기술 개발 관련 핵심인력의 퇴직사실이 없다',
