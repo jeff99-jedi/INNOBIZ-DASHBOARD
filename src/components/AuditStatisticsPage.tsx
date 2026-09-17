@@ -360,24 +360,6 @@ export const AuditStatisticsPage: React.FC<AuditStatisticsPageProps> = ({
             <BookOpen className="w-3.5 h-3.5 text-blue-600" />
             <span>자가진단 문항</span>
           </button>
-          <button
-            type="button"
-            onClick={onNavigateToDashboard}
-            className="px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-2xs cursor-pointer"
-            title="문서 대시보드로 이동"
-          >
-            <Layers className="w-3.5 h-3.5" />
-            <span>문서 대시보드</span>
-          </button>
-          <button
-            type="button"
-            onClick={handlePrint}
-            className="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-2xs cursor-pointer"
-            title="통계 리포트 인쇄 / PDF 저장"
-          >
-            <Printer className="w-3.5 h-3.5" />
-            <span>통계 인쇄 / PDF</span>
-          </button>
         </div>
       </header>
 
