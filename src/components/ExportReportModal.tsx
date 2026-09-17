@@ -338,14 +338,14 @@ ${item.optionalDocs && item.optionalDocs.length > 0 ? `\n### 4. 보조 및 가�
 
                 {/* Exact Table Schema Required: No / 평가항목(세부지표) / 자가진단현황 / 구비서류 / 다운로드버튼 */}
                 <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs border-collapse">
+                  <table className="w-full text-left text-xs border-collapse min-w-[780px]">
                     <thead>
                       <tr className="bg-slate-100/75 text-slate-700 font-semibold border-b border-slate-200">
-                        <th className="py-2.5 px-3 w-12 text-center">No</th>
-                        <th className="py-2.5 px-3 w-64">평가항목 (세부지표)</th>
-                        <th className="py-2.5 px-3 w-48">자가진단현황</th>
-                        <th className="py-2.5 px-3">구비서류</th>
-                        <th className="py-2.5 px-3 w-28 text-center">다운로드</th>
+                        <th className="py-2.5 px-3 w-12 text-center whitespace-nowrap">No</th>
+                        <th className="py-2.5 px-3 w-64 text-center whitespace-nowrap">평가항목 (세부지표)</th>
+                        <th className="py-2.5 px-3 w-52 text-center whitespace-nowrap">자가진단현황</th>
+                        <th className="py-2.5 px-3 text-center whitespace-nowrap">구비서류</th>
+                        <th className="py-2.5 px-3 w-32 min-w-[110px] text-center whitespace-nowrap">다운로드</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-200">
@@ -429,18 +429,18 @@ ${item.optionalDocs && item.optionalDocs.length > 0 ? `\n### 4. 보조 및 가�
                             </td>
 
                             {/* 5. 다운로드버튼 */}
-                            <td className="py-3 px-3 text-center">
+                            <td className="py-3 px-3 text-center w-32 min-w-[110px] whitespace-nowrap">
                               <button
                                 type="button"
                                 onClick={() => handleDownloadSingleDoc(item)}
-                                className="px-2.5 py-1.5 text-xs font-semibold bg-blue-50 hover:bg-blue-600 text-blue-700 hover:text-white border border-blue-200 hover:border-blue-600 rounded-lg inline-flex items-center gap-1 transition-all cursor-pointer shadow-2xs"
+                                className="px-3 py-1.5 text-xs font-semibold bg-blue-50 hover:bg-blue-600 text-blue-700 hover:text-white border border-blue-200 hover:border-blue-600 rounded-lg inline-flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs whitespace-nowrap min-w-[88px]"
                                 title="표준 대응서류 다운로드 (Word/Doc)"
                               >
-                                <Download className="w-3.5 h-3.5" />
-                                <span>다운로드</span>
+                                <Download className="w-3.5 h-3.5 shrink-0" />
+                                <span className="whitespace-nowrap">다운로드</span>
                               </button>
                               {hasTemplate && (
-                                <div className="text-[10px] text-emerald-700 font-semibold mt-1">
+                                <div className="text-[10px] text-emerald-700 font-semibold mt-1 whitespace-nowrap">
                                   정규서식 연계
                                 </div>
                               )}
