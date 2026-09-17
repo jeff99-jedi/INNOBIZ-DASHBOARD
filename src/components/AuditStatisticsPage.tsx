@@ -602,7 +602,16 @@ export const AuditStatisticsPage: React.FC<AuditStatisticsPageProps> = ({
                       wrapperStyle={{ paddingTop: 10, fontSize: 11, fontFamily: 'Pretendard' }}
                       formatter={(val) => <span className="text-slate-700 font-medium">{val}</span>}
                     />
-                    <Bar dataKey="배점" fill="#f1f5f9" stroke="#e2e8f0" strokeWidth={1} radius={[4, 4, 0, 0]} name="공시 기준 배점" />
+                    <Bar 
+                      dataKey="배점" 
+                      fill="#94a3b8" 
+                      fillOpacity={0.5} 
+                      stroke="#94a3b8" 
+                      strokeOpacity={0.5} 
+                      strokeWidth={1} 
+                      radius={[4, 4, 0, 0]} 
+                      name="공시 기준 배점" 
+                    />
                     <Bar dataKey="모의득점" fill="#2563eb" radius={[4, 4, 0, 0]} name="현재 모의 득점">
                       {analytics.partChartData.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={entry.fill} />
