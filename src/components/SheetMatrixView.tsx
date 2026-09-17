@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { DocumentGroup, DocumentItem } from '../types';
+import { DocumentAttachment, DocumentGroup, DocumentItem } from '../types';
 import { RAW_SHEET_ROWS, SheetRowItem, parseEvidenceDocs } from '../data/sheetData';
 import { 
   FileSpreadsheet, 
@@ -9,20 +9,32 @@ import {
   Paperclip, 
   Download, 
   ArrowUpRight,
-  Filter
+  Filter,
+  Upload,
+  Database,
+  Sparkles
 } from 'lucide-react';
+import { RowDocumentUploadModal } from './RowDocumentUploadModal';
 
 interface SheetMatrixViewProps {
   groups: DocumentGroup[];
   onOpenGroupDetail: (group: DocumentGroup) => void;
+  onUpdateGroup?: (group: DocumentGroup) => void;
+  companyName?: string;
+  ceoName?: string;
 }
 
 export const SheetMatrixView: React.FC<SheetMatrixViewProps> = ({
   groups,
   onOpenGroupDetail,
+  onUpdateGroup,
+  companyName,
+  ceoName,
 }) => {
   const [filterSection, setFilterSection] = useState<string>('all');
   const [search, setSearch] = useState('');
+  const [activeUploadRow, setActiveUploadRow] = useState<SheetRowItem | null>(null);
+  const [refreshTick, setRefreshTick] = useState(0);
 
   // Find document status for each sheet row
   const getDocAndGroupForRow = (row: SheetRowItem) => {
@@ -35,6 +47,51 @@ export const SheetMatrixView: React.FC<SheetMatrixViewProps> = ({
       }
     }
     return { group: null, document: null };
+  };
+
+  const getRowAttachments = (row: SheetRowItem, document: DocumentItem | null) => {
+    if (document?.attachments && document.attachments.length > 0) {
+      return document.attachments;
+    }
+    try {
+      const saved = localStorage.getItem(`row_attach_${row.evalItem}`);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch (e) {
+      // ignore
+    }
+    return [];
+  };
+
+  const handleAttachmentsUpdated = (
+    row: SheetRowItem,
+    updatedAttachments: DocumentAttachment[],
+    newStatus: 'completed' | 'review' | 'in_progress' = 'completed'
+  ) => {
+    // 1. Update matching group and document
+    const { group, document } = getDocAndGroupForRow(row);
+    if (group && document && onUpdateGroup) {
+      const updatedDocs = group.documents.map((d) => {
+        if (d.id === document.id) {
+          return {
+            ...d,
+            status: newStatus,
+            attachments: updatedAttachments,
+            updatedAt: new Date().toISOString(),
+          };
+        }
+        return d;
+      });
+      onUpdateGroup({
+        ...group,
+        documents: updatedDocs,
+        updatedAt: new Date().toISOString(),
+      });
+    }
+    // 2. Force re-render
+    setRefreshTick((t) => t + 1);
   };
 
   const filteredRows = RAW_SHEET_ROWS.filter((row) => {
@@ -162,7 +219,7 @@ export const SheetMatrixView: React.FC<SheetMatrixViewProps> = ({
               <th className="py-2.5 px-3 w-44">기업 현황 (시트 기재값)</th>
               <th className="py-2.5 px-3 min-w-[220px]">주요 증빙 자료 (필수 서류)</th>
               <th className="py-2.5 px-3 w-48">배치된 문서 그룹</th>
-              <th className="py-2.5 px-3 w-24 text-center">준비 현황</th>
+              <th className="py-2.5 px-3 w-36 text-center whitespace-nowrap">서류 업로드 / 현황</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-200">
@@ -171,7 +228,7 @@ export const SheetMatrixView: React.FC<SheetMatrixViewProps> = ({
               const evidenceList = parseEvidenceDocs(row.evidenceDocs);
 
               return (
-                <tr key={idx} className="hover:bg-blue-50/40 transition-colors">
+                <tr key={`${idx}-${refreshTick}`} className="hover:bg-blue-50/40 transition-colors">
                   <td className="py-3 px-3 text-center text-slate-400 font-medium">
                     {idx + 1}
                   </td>
@@ -229,27 +286,54 @@ export const SheetMatrixView: React.FC<SheetMatrixViewProps> = ({
                       <span className="text-slate-400 italic">미배치</span>
                     )}
                   </td>
-                  <td className="py-3 px-3 text-center">
-                    {document?.status === 'completed' && (
-                      <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded">
-                        <CheckCircle2 className="w-3 h-3" /> 완료
-                      </span>
-                    )}
-                    {document?.status === 'review' && (
-                      <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded">
-                        <Clock className="w-3 h-3" /> 검토중
-                      </span>
-                    )}
-                    {(document?.status === 'in_progress' || !document) && (
-                      <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.5 rounded">
-                        작성중
-                      </span>
-                    )}
-                    {document?.attachments && document.attachments.length > 0 && (
-                      <span className="block text-[10px] text-slate-500 mt-1">
-                        📎 {document.attachments.length}개 파일
-                      </span>
-                    )}
+                  <td className="py-2.5 px-3 text-center">
+                    {(() => {
+                      const rowAttachs = getRowAttachments(row, document);
+                      const hasAttachments = rowAttachs.length > 0;
+                      const effectiveStatus = hasAttachments ? 'completed' : (document?.status || 'in_progress');
+
+                      return (
+                        <div className="flex flex-col items-center gap-1.5 min-w-[105px]">
+                          <button
+                            type="button"
+                            onClick={() => setActiveUploadRow(row)}
+                            className="w-full px-2.5 py-1 text-xs font-bold text-blue-700 hover:text-white bg-blue-50 hover:bg-blue-600 border border-blue-200 hover:border-blue-600 rounded-lg inline-flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs whitespace-nowrap"
+                            title="대응서류 업로드 (Supabase Storage / Claude / 로컬)"
+                          >
+                            <Upload className="w-3.5 h-3.5 shrink-0" />
+                            <span>업로드</span>
+                          </button>
+
+                          <div className="flex items-center gap-1 flex-wrap justify-center">
+                            {effectiveStatus === 'completed' && (
+                              <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded">
+                                <CheckCircle2 className="w-3 h-3" /> 완료
+                              </span>
+                            )}
+                            {effectiveStatus === 'review' && (
+                              <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded">
+                                <Clock className="w-3 h-3" /> 검토중
+                              </span>
+                            )}
+                            {effectiveStatus === 'in_progress' && (
+                              <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.5 rounded">
+                                대응중
+                              </span>
+                            )}
+                            {rowAttachs.length > 0 && (
+                              <button
+                                type="button"
+                                onClick={() => setActiveUploadRow(row)}
+                                className="text-[10px] text-blue-700 font-semibold bg-blue-50/90 border border-blue-200 hover:bg-blue-100 px-1.5 py-0.5 rounded cursor-pointer transition-colors"
+                                title="등록된 서류 목록 확인"
+                              >
+                                📎 {rowAttachs.length}건
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </td>
                 </tr>
               );
@@ -263,10 +347,26 @@ export const SheetMatrixView: React.FC<SheetMatrixViewProps> = ({
         <div>
           총 <strong>{filteredRows.length}</strong>개 평가항목 표시 중 (총 배점: <strong>{filteredRows.reduce((acc, r) => acc + r.points, 0)}점</strong>)
         </div>
-        <div className="text-slate-400 text-[11px]">
-          각 행의 '배치된 문서 그룹'을 클릭하면 즉시 해당 서류철로 이동하여 파일을 열람하거나 첨부할 수 있습니다.
+        <div className="text-slate-400 text-[11px] flex items-center gap-2">
+          <span>각 행의 [업로드]를 통해 Supabase 클라우드 또는 클로드(Claude) 작업 서류를 즉시 등록할 수 있습니다.</span>
         </div>
       </div>
+
+      {/* Document Upload Modal */}
+      {activeUploadRow && (
+        <RowDocumentUploadModal
+          isOpen={!!activeUploadRow}
+          onClose={() => setActiveUploadRow(null)}
+          row={activeUploadRow}
+          matchedGroup={getDocAndGroupForRow(activeUploadRow).group}
+          matchedDoc={getDocAndGroupForRow(activeUploadRow).document}
+          companyName={companyName}
+          ceoName={ceoName}
+          onAttachmentsUpdated={(updatedAttachments, newStatus) =>
+            handleAttachmentsUpdated(activeUploadRow, updatedAttachments, newStatus)
+          }
+        />
+      )}
     </div>
   );
 };

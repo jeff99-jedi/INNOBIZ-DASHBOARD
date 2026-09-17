@@ -469,6 +469,9 @@ export default function App() {
           <SheetMatrixView
             groups={groups}
             onOpenGroupDetail={(grp) => setActiveDetailGroup(grp)}
+            onUpdateGroup={handleUpdateGroup}
+            companyName={company.companyName}
+            ceoName={company.ceoName}
           />
         ) : (
           <>
