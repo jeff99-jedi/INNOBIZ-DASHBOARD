@@ -338,28 +338,30 @@ export const AuditStatisticsPage: React.FC<AuditStatisticsPageProps> = ({
   return (
     <div className="flex-1 bg-slate-50 text-slate-900 min-h-screen pb-20 antialiased font-sans print:bg-white print:pb-0">
       {/* Top Header */}
-      <header className="border-b border-slate-200 bg-white/95 backdrop-blur-md px-5 sm:px-8 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sticky top-0 z-20 print:hidden">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="px-2.5 py-0.5 text-xs font-semibold bg-blue-50 text-blue-700 rounded-full border border-blue-200 flex items-center gap-1.5">
-              <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
-              {company.companyName} 통계 분석 엔진
-            </span>
+      <header className="border-b border-slate-200 bg-white/95 backdrop-blur-md sticky top-0 z-20 print:hidden">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="px-2.5 py-0.5 text-xs font-semibold bg-blue-50 text-blue-700 rounded-full border border-blue-200 flex items-center gap-1.5">
+                <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
+                {company.companyName} 통계 분석 엔진
+              </span>
+            </div>
+            <h1 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight leading-tight mt-1">
+              이노비즈 모의채점 통계 및 심사분야별 역량 분석
+            </h1>
           </div>
-          <h1 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight leading-tight mt-1">
-            이노비즈 모의채점 통계 및 심사분야별 역량 분석
-          </h1>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={onNavigateToGuide}
-            className="px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-2xs cursor-pointer"
-            title="자가진단 문항 화면으로 이동"
-          >
-            <BookOpen className="w-3.5 h-3.5 text-blue-600" />
-            <span>자가진단 문항</span>
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={onNavigateToGuide}
+              className="px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-2xs cursor-pointer"
+              title="자가진단 문항 화면으로 이동"
+            >
+              <BookOpen className="w-3.5 h-3.5 text-blue-600" />
+              <span>자가진단 문항</span>
+            </button>
+          </div>
         </div>
       </header>
 
@@ -600,7 +602,7 @@ export const AuditStatisticsPage: React.FC<AuditStatisticsPageProps> = ({
                       wrapperStyle={{ paddingTop: 10, fontSize: 11, fontFamily: 'Pretendard' }}
                       formatter={(val) => <span className="text-slate-700 font-medium">{val}</span>}
                     />
-                    <Bar dataKey="배점" fill="#e2e8f0" radius={[4, 4, 0, 0]} name="공시 기준 배점" />
+                    <Bar dataKey="배점" fill="#f1f5f9" stroke="#e2e8f0" strokeWidth={1} radius={[4, 4, 0, 0]} name="공시 기준 배점" />
                     <Bar dataKey="모의득점" fill="#2563eb" radius={[4, 4, 0, 0]} name="현재 모의 득점">
                       {analytics.partChartData.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={entry.fill} />
