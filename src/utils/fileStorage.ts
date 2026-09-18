@@ -3,6 +3,7 @@
  * Uses IndexedDB for persistent binary storage of MS Word, Excel, PDF, and other files.
  */
 import { DocumentAttachment } from '../types';
+import { downloadFromSupabaseStorage } from '../services/supabaseService';
 
 const DB_NAME = 'innobiz_attachment_storage_v1';
 const STORE_NAME = 'attachment_blobs';
@@ -156,13 +157,25 @@ export async function downloadAttachmentFile(
 ): Promise<boolean> {
   let blob: Blob | null = await getAttachmentBlob(att.id);
 
-  // If not found in IndexedDB, check if dataUrl is available
+  // If not found in IndexedDB, check if dataUrl or Supabase Storage has it
   if (!blob && att.dataUrl) {
-    try {
-      const res = await fetch(att.dataUrl);
-      blob = await res.blob();
-    } catch {
-      blob = null;
+    // Try Supabase Storage client download first
+    const supRes = await downloadFromSupabaseStorage(att.dataUrl);
+    if (supRes.success && supRes.blob) {
+      blob = supRes.blob;
+      // Cache to IndexedDB for quick subsequent access
+      await saveAttachmentBlob(att.id, blob);
+    } else {
+      // Direct fetch fallback
+      try {
+        const res = await fetch(att.dataUrl);
+        if (res.ok) {
+          blob = await res.blob();
+          await saveAttachmentBlob(att.id, blob);
+        }
+      } catch {
+        blob = null;
+      }
     }
   }
 

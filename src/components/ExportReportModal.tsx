@@ -1,9 +1,10 @@
 import React, { useState, useMemo } from 'react';
-import { CompanyProfile, DocumentGroup, SelfAuditGuideItem, SelfAuditOption } from '../types';
+import { CompanyProfile, DocumentAttachment, DocumentGroup, SelfAuditGuideItem, SelfAuditOption } from '../types';
 import { SELF_AUDIT_PARTS, SELF_AUDIT_GUIDE_ITEMS } from '../data/selfAuditGuideData';
 import { generateDocumentsForCompany, GeneratedDocTemplate } from '../data/generatedDocTemplates';
 import { convertImageUrlToBase64Png } from '../utils/imageUtils';
 import { convertMarkdownToRichHtml } from './AutoDocGeneratorModal';
+import { getAttachmentBlob } from '../utils/fileStorage';
 import {
   X,
   Download,
@@ -15,7 +16,10 @@ import {
   Building2,
   SlidersHorizontal,
   Check,
-  FileDown
+  FileDown,
+  Paperclip,
+  CheckCircle2,
+  Loader2
 } from 'lucide-react';
 
 interface ExportReportModalProps {
@@ -49,6 +53,15 @@ export const ExportReportModal: React.FC<ExportReportModalProps> = ({
   // Active filter by Part & Search query
   const [activePartFilter, setActivePartFilter] = useState<'all' | 'part1' | 'part2' | 'part3' | 'part4'>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [downloadToast, setDownloadToast] = useState<string | null>(null);
+
+  const showToast = (msg: string) => {
+    setDownloadToast(msg);
+    setTimeout(() => {
+      setDownloadToast((curr) => (curr === msg ? null : curr));
+    }, 3500);
+  };
 
   // Pre-generate standardized templates for the company
   const generatedTemplates = useMemo(() => {
@@ -64,12 +77,74 @@ export const ExportReportModal: React.FC<ExportReportModalProps> = ({
     return map;
   }, [generatedTemplates]);
 
+  // Find user-uploaded files for an item (from groups or localStorage)
+  const getItemAttachments = (item: SelfAuditGuideItem): DocumentAttachment[] => {
+    // 1. Search in groups by targetEvalItem matching or linkedDocTemplateId
+    for (const grp of groups) {
+      for (const doc of grp.documents) {
+        const isMatch =
+          (item.linkedDocTemplateId && doc.id === item.linkedDocTemplateId) ||
+          doc.title.includes(item.evalItemName) ||
+          item.evalItemName.includes(doc.title) ||
+          (doc.targetEvalItem && doc.targetEvalItem.includes(item.evalItemName));
+        if (isMatch && doc.attachments && doc.attachments.length > 0) {
+          return doc.attachments;
+        }
+      }
+    }
+    // 2. Search in localStorage by row key
+    try {
+      const localKey = `row_attach_${item.evalItemName}`;
+      const saved = localStorage.getItem(localKey);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {
+      // ignore
+    }
+    return [];
+  };
+
+  // Download custom user-uploaded attachment file directly
+  const handleDownloadAttachment = async (attach: DocumentAttachment) => {
+    try {
+      setDownloadingId(attach.id);
+      const blob = await getAttachmentBlob(attach.id);
+      let downloadUrl = '';
+      if (blob) {
+        downloadUrl = URL.createObjectURL(blob);
+      } else if (attach.dataUrl) {
+        downloadUrl = attach.dataUrl;
+      } else {
+        showToast(`'${attach.name}' 파일을 찾을 수 없습니다.`);
+        setDownloadingId(null);
+        return;
+      }
+
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = attach.name;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      if (blob) URL.revokeObjectURL(downloadUrl);
+      showToast(`'${attach.name}' 다운로드를 완료했습니다.`);
+    } catch (e) {
+      showToast('다운로드 처리 중 오류가 발생했습니다.');
+    } finally {
+      setDownloadingId(null);
+    }
+  };
+
   // Download a single document as Word (.doc)
   const handleDownloadSingleDoc = async (item: SelfAuditGuideItem) => {
-    const template = item.linkedDocTemplateId ? templateByDocId.get(item.linkedDocTemplateId) : null;
-    const title = template?.title || `${item.evalItemName} 증빙 대응서류`;
-    const docCode = template?.docCode || `DOC-${item.evalItemCode.replace(/[^a-zA-Z0-9]/g, '_')}`;
-    const rawContent = template?.content || `
+    setDownloadingId(item.id);
+    try {
+      const template = item.linkedDocTemplateId ? templateByDocId.get(item.linkedDocTemplateId) : null;
+      const title = template?.title || `${item.evalItemName} 증빙 대응서류`;
+      const docCode = template?.docCode || `DOC-${item.evalItemCode.replace(/[^a-zA-Z0-9]/g, '_')}`;
+      const rawContent = template?.content || `
 # [사내 표준 증빙] ${item.evalItemName} 구비서류
 
 **문서번호:** ${docCode}  
@@ -109,11 +184,11 @@ ${item.optionalDocs && item.optionalDocs.length > 0 ? `\n### 4. 보조 및 가�
 **${company.companyName} 대표이사 ${company.ceoName}**
     `.trim();
 
-    const formattedBodyHtml = convertMarkdownToRichHtml(rawContent);
-    const base64Logo = company.logoUrl ? await convertImageUrlToBase64Png(company.logoUrl, 280, 95) : '';
-    const base64Seal = company.sealUrl ? await convertImageUrlToBase64Png(company.sealUrl, 90, 90) : '';
+      const formattedBodyHtml = convertMarkdownToRichHtml(rawContent);
+      const base64Logo = company.logoUrl ? await convertImageUrlToBase64Png(company.logoUrl, 280, 95) : '';
+      const base64Seal = company.sealUrl ? await convertImageUrlToBase64Png(company.sealUrl, 90, 90) : '';
 
-    const wordHtml = `
+      const wordHtml = `
       <html xmlns:o="urn:schemas-microsoft-com:office:office" 
             xmlns:w="urn:schemas-microsoft-com:office:word" 
             xmlns="http://www.w3.org/TR/REC-html40">
@@ -177,15 +252,21 @@ ${item.optionalDocs && item.optionalDocs.length > 0 ? `\n### 4. 보조 및 가�
       </html>
     `;
 
-    const blob = new Blob(['\ufeff', wordHtml], { type: 'application/msword;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `[${company.companyName}]_${item.evalItemCode}_${item.evalItemName.replace(/[\/\\:*?"<>|]/g, '_')}_구비서류.doc`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+      const blob = new Blob(['\ufeff', wordHtml], { type: 'application/msword;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `[${company.companyName}]_${item.evalItemCode}_${item.evalItemName.replace(/[\/\\:*?"<>|]/g, '_')}_구비서류.doc`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      showToast(`'${item.evalItemName}' 공식 워드(.doc) 서류를 다운로드했습니다.`);
+    } catch (e) {
+      showToast('문서 생성 중 오류가 발생했습니다.');
+    } finally {
+      setDownloadingId(null);
+    }
   };
 
   // Filter items by Part and Search term
@@ -260,6 +341,23 @@ ${item.optionalDocs && item.optionalDocs.length > 0 ? `\n### 4. 보조 및 가�
             </button>
           </div>
         </div>
+
+        {/* Download Toast Notification */}
+        {downloadToast && (
+          <div className="mb-3 px-4 py-2.5 bg-slate-900 text-white text-xs font-semibold rounded-xl flex items-center justify-between shadow-lg animate-fade-in border border-slate-700">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span>{downloadToast}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setDownloadToast(null)}
+              className="text-slate-400 hover:text-white p-0.5 ml-2 cursor-pointer"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
 
         {/* Filters Bar: Part Tabs + Search Box */}
         <div className="py-3 flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-100">
@@ -429,21 +527,65 @@ ${item.optionalDocs && item.optionalDocs.length > 0 ? `\n### 4. 보조 및 가�
                             </td>
 
                             {/* 5. 다운로드버튼 */}
-                            <td className="py-3 px-3 text-center w-32 min-w-[110px] whitespace-nowrap">
-                              <button
-                                type="button"
-                                onClick={() => handleDownloadSingleDoc(item)}
-                                className="px-3 py-1.5 text-xs font-semibold bg-blue-50 hover:bg-blue-600 text-blue-700 hover:text-white border border-blue-200 hover:border-blue-600 rounded-lg inline-flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs whitespace-nowrap min-w-[88px]"
-                                title="표준 대응서류 다운로드 (Word/Doc)"
-                              >
-                                <Download className="w-3.5 h-3.5 shrink-0" />
-                                <span className="whitespace-nowrap">다운로드</span>
-                              </button>
-                              {hasTemplate && (
-                                <div className="text-[10px] text-emerald-700 font-semibold mt-1 whitespace-nowrap">
-                                  정규서식 연계
-                                </div>
-                              )}
+                            <td className="py-3 px-3 text-center w-36 min-w-[120px]">
+                              {(() => {
+                                const attachments = getItemAttachments(item);
+                                const isDownloadingDoc = downloadingId === item.id;
+
+                                return (
+                                  <div className="flex flex-col items-center gap-1.5">
+                                    {/* Primary Action: Standard Word Document Download */}
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDownloadSingleDoc(item)}
+                                      disabled={isDownloadingDoc}
+                                      className="w-full max-w-[110px] px-2.5 py-1.5 text-xs font-semibold bg-blue-50 hover:bg-blue-600 text-blue-700 hover:text-white border border-blue-200 hover:border-blue-600 rounded-lg inline-flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs whitespace-nowrap disabled:opacity-50"
+                                      title="표준 대응서류 다운로드 (Word/Doc)"
+                                    >
+                                      {isDownloadingDoc ? (
+                                        <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0" />
+                                      ) : (
+                                        <Download className="w-3.5 h-3.5 shrink-0" />
+                                      )}
+                                      <span className="whitespace-nowrap">
+                                        {isDownloadingDoc ? '생성 중...' : '다운로드'}
+                                      </span>
+                                    </button>
+
+                                    {/* Additional: If custom uploaded attachments exist for this item */}
+                                    {attachments.length > 0 && (
+                                      <div className="w-full flex flex-col gap-1 mt-0.5">
+                                        {attachments.slice(0, 2).map((att) => {
+                                          const isDownloadingAtt = downloadingId === att.id;
+                                          return (
+                                            <button
+                                              key={att.id}
+                                              type="button"
+                                              onClick={() => handleDownloadAttachment(att)}
+                                              disabled={isDownloadingAtt}
+                                              className="w-full max-w-[110px] px-2 py-1 text-[11px] font-medium bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white border border-emerald-200 hover:border-emerald-600 rounded inline-flex items-center justify-center gap-1 transition-colors cursor-pointer truncate"
+                                              title={`첨부파일: ${att.name} 다운로드`}
+                                            >
+                                              {isDownloadingAtt ? (
+                                                <Loader2 className="w-3 h-3 animate-spin shrink-0" />
+                                              ) : (
+                                                <Paperclip className="w-3 h-3 shrink-0" />
+                                              )}
+                                              <span className="truncate max-w-[70px]">{att.name}</span>
+                                            </button>
+                                          );
+                                        })}
+                                      </div>
+                                    )}
+
+                                    {hasTemplate && (
+                                      <span className="text-[10px] text-blue-600 font-semibold whitespace-nowrap">
+                                        표준서식
+                                      </span>
+                                    )}
+                                  </div>
+                                );
+                              })()}
                             </td>
                           </tr>
                         );

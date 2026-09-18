@@ -123,6 +123,93 @@ export async function uploadToSupabaseStorage(
 }
 
 /**
+ * Download a file from Supabase Storage as a Blob
+ */
+export async function downloadFromSupabaseStorage(
+  filePathOrUrl: string
+): Promise<{ success: boolean; blob?: Blob; error?: string }> {
+  const supabase = getSupabaseClient();
+  if (!supabase) {
+    return {
+      success: false,
+      error: 'Supabase 클라이언트가 초기화되지 않았습니다.',
+    };
+  }
+
+  try {
+    // If a full public URL was provided, extract the path relative to the bucket
+    let cleanPath = filePathOrUrl;
+    if (cleanPath.startsWith('http://') || cleanPath.startsWith('https://')) {
+      const bucketMarker = `/${BUCKET_NAME}/`;
+      const idx = cleanPath.indexOf(bucketMarker);
+      if (idx !== -1) {
+        cleanPath = decodeURIComponent(cleanPath.slice(idx + bucketMarker.length).split('?')[0]);
+      }
+    }
+
+    const { data, error } = await supabase.storage.from(BUCKET_NAME).download(cleanPath);
+
+    if (error || !data) {
+      return {
+        success: false,
+        error: error?.message || 'Supabase에서 파일을 내려받지 못했습니다.',
+      };
+    }
+
+    return {
+      success: true,
+      blob: data,
+    };
+  } catch (err: any) {
+    return {
+      success: false,
+      error: err?.message || 'Supabase 파일 다운로드 중 네트워크 오류가 발생했습니다.',
+    };
+  }
+}
+
+/**
+ * List files uploaded to Supabase Storage for a specific self-audit item
+ */
+export async function listSupabaseFilesForItem(
+  section: string,
+  evalItem: string
+): Promise<Array<{ name: string; path: string; size: number; updatedAt?: string; publicUrl: string }>> {
+  const supabase = getSupabaseClient();
+  if (!supabase) return [];
+
+  try {
+    const partFolder = section.split('.')[0] || 'part';
+    const sanitizedItem = evalItem.replace(/[/\\?%*:|"<>]/g, '_');
+    const folderPath = `${partFolder}/${sanitizedItem}`;
+
+    const { data, error } = await supabase.storage.from(BUCKET_NAME).list(folderPath, {
+      limit: 100,
+      sortBy: { column: 'name', order: 'asc' },
+    });
+
+    if (error || !data) return [];
+
+    return data
+      .filter((file) => file.name && !file.name.startsWith('.'))
+      .map((file) => {
+        const fullPath = `${folderPath}/${file.name}`;
+        const { data: urlData } = supabase.storage.from(BUCKET_NAME).getPublicUrl(fullPath);
+        return {
+          name: file.name,
+          path: fullPath,
+          size: file.metadata?.size || 0,
+          updatedAt: file.updated_at,
+          publicUrl: urlData?.publicUrl || '',
+        };
+      });
+  } catch (err) {
+    console.warn('Failed to list Supabase files for item:', err);
+    return [];
+  }
+}
+
+/**
  * Generate standard InnoBiz Word document (.doc) from Claude markdown/text
  */
 export function convertClaudeMarkdownToWordDoc(

@@ -229,7 +229,8 @@ export const RowDocumentUploadModal: React.FC<RowDocumentUploadModalProps> = ({
 
     let publicUrl: string | undefined = undefined;
     if (supabaseConfig.isConfigured) {
-      const storagePath = `${row.section.split('.')[0] || 'part'}/${fileName}`;
+      const sanitizedItem = row.evalItem.replace(/[/\\?%*:|"<>]/g, '_');
+      const storagePath = `${row.section.split('.')[0] || 'part'}/${sanitizedItem}/${fileName}`;
       const uploadRes = await uploadToSupabaseStorage(storagePath, docBlob, 'application/msword');
       if (uploadRes.success) publicUrl = uploadRes.publicUrl;
     }
