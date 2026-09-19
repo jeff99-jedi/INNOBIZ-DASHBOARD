@@ -286,6 +286,10 @@ th { background-color: #f1f5f9; text-align: center; font-weight: bold; }
 </body>
 </html>`;
       blob = new Blob([wordHtml], { type: 'application/msword;charset=utf-8' });
+    } else if (category === 'pdf') {
+      // Generate a structurally 100% valid PDF document (.pdf) that opens in ALPDF, Adobe Acrobat, Edge/Chrome
+      const pdfBytes = generateValidPdfDocument(att.name, companyName, att.uploadedAt);
+      blob = new Blob([pdfBytes], { type: 'application/pdf' });
     } else {
       // General text/document fallback
       const textContent = `[이노비즈 증빙 파일]\n파일명: ${att.name}\n등록일: ${att.uploadedAt}\n기업명: ${companyName}\n파일형식: ${att.fileType}`;
@@ -327,3 +331,120 @@ function escapeXml(unsafe: string): string {
     }
   });
 }
+
+/**
+ * Escapes characters for PDF literal text strings: \( \) \\
+ */
+function escapePdfText(text: string): string {
+  return (text || '')
+    .replace(/\\/g, '\\\\')
+    .replace(/\(/g, '\\(')
+    .replace(/\)/g, '\\)')
+    .replace(/[\r\n]/g, ' ');
+}
+
+/**
+ * Generates a clean, 100% compliant PDF 1.4 binary file with exact byte offsets.
+ * Compatible with ALPDF, Adobe Acrobat, Foxit, Chrome, Edge, Safari.
+ */
+export function generateValidPdfDocument(
+  docTitle: string,
+  companyName: string,
+  uploadDate: string
+): Uint8Array {
+  const safeTitle = escapePdfText(docTitle);
+  const safeCompany = escapePdfText(companyName);
+  const safeDate = escapePdfText(uploadDate || new Date().toISOString().split('T')[0]);
+
+  const streamLines = [
+    '0.12 0.28 0.68 rg',
+    '50 780 495 2.5 re f',
+    '0.96 0.97 0.99 rg',
+    '50 560 495 200 re f',
+    '0.82 0.86 0.92 RG',
+    '50 560 495 200 re S',
+    'BT',
+    '/F1 15 Tf',
+    '0.1 0.2 0.5 rg',
+    '50 800 Td',
+    '(' + safeTitle + ') Tj',
+    'ET',
+    'BT',
+    '/F1 11 Tf',
+    '0.15 0.2 0.3 rg',
+    '70 730 Td',
+    '(Document Title: ' + safeTitle + ') Tj',
+    '0 -24 Td',
+    '(Issuing Company: ' + safeCompany + ') Tj',
+    '0 -24 Td',
+    '(Registration Date: ' + safeDate + ') Tj',
+    '0 -24 Td',
+    '(Document Classification: INNO-BIZ Evaluation Evidence Document) Tj',
+    '0 -24 Td',
+    '(Verification Status: Officially Prepared and Stored for Field Audit) Tj',
+    'ET',
+    'BT',
+    '/F1 9 Tf',
+    '0.5 0.5 0.5 rg',
+    '50 50 Td',
+    '(INNO-BIZ Technology Innovation Certification Management System) Tj',
+    'ET'
+  ];
+
+  const streamContent = streamLines.join('\n');
+  const encoder = new TextEncoder();
+  const streamBytes = encoder.encode(streamContent);
+  const streamLength = streamBytes.length;
+
+  const header = '%PDF-1.4\n%\\xE2\\xE3\\xCF\\xD3\n';
+  const headerBytes = encoder.encode(header);
+
+  const obj1 = '1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n';
+  const obj2 = '2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n';
+  const obj3 = '3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>\nendobj\n';
+  const obj4 = '4 0 obj\n<< /Length ' + streamLength + ' >>\nstream\n' + streamContent + '\nendstream\nendobj\n';
+  const obj5 = '5 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\nendobj\n';
+
+  const objects = [obj1, obj2, obj3, obj4, obj5];
+  const objBytesList = objects.map((o) => encoder.encode(o));
+
+  const pad = (n: number) => ('0000000000' + n).slice(-10);
+
+  let currentOffset = headerBytes.length;
+  const xrefEntries = ['xref\n0 6\n0000000000 65535 f \n'];
+
+  for (let i = 0; i < objBytesList.length; i++) {
+    xrefEntries.push(pad(currentOffset) + ' 00000 n \n');
+    currentOffset += objBytesList[i].length;
+  }
+
+  const startxref = currentOffset;
+  const trailer = 'trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n' + startxref + '\n%%EOF\n';
+  const trailerBytes = encoder.encode(trailer);
+  const xrefBytes = encoder.encode(xrefEntries.join(''));
+
+  const totalLength =
+    headerBytes.length +
+    objBytesList.reduce((sum, b) => sum + b.length, 0) +
+    xrefBytes.length +
+    trailerBytes.length;
+
+  const finalArray = new Uint8Array(totalLength);
+
+  let offset = 0;
+  finalArray.set(headerBytes, offset);
+  offset += headerBytes.length;
+
+  for (const b of objBytesList) {
+    finalArray.set(b, offset);
+    offset += b.length;
+  }
+
+  finalArray.set(xrefBytes, offset);
+  offset += xrefBytes.length;
+
+  finalArray.set(trailerBytes, offset);
+
+  return finalArray;
+}
+

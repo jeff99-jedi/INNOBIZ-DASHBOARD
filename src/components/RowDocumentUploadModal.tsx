@@ -25,7 +25,7 @@ import {
   convertClaudeMarkdownToWordDoc, 
   BUCKET_NAME 
 } from '../services/supabaseService';
-import { saveAttachmentBlob, deleteAttachmentBlob, getAttachmentBlob } from '../utils/fileStorage';
+import { saveAttachmentBlob, deleteAttachmentBlob, getAttachmentBlob, downloadAttachmentFile } from '../utils/fileStorage';
 
 interface RowDocumentUploadModalProps {
   isOpen: boolean;
@@ -159,24 +159,7 @@ export const RowDocumentUploadModal: React.FC<RowDocumentUploadModalProps> = ({
 
   const handleDownloadAttachment = async (attach: DocumentAttachment) => {
     try {
-      const blob = await getAttachmentBlob(attach.id);
-      let downloadUrl = '';
-      if (blob) {
-        downloadUrl = URL.createObjectURL(blob);
-      } else if (attach.dataUrl) {
-        downloadUrl = attach.dataUrl;
-      } else {
-        showToast('파일 데이터를 찾을 수 없습니다.');
-        return;
-      }
-
-      const link = document.createElement('a');
-      link.href = downloadUrl;
-      link.download = attach.name;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      if (blob) URL.revokeObjectURL(downloadUrl);
+      await downloadAttachmentFile(attach, companyName || '(주)더한농');
       showToast(`'${attach.name}' 다운로드를 시작했습니다.`);
     } catch (e) {
       showToast('다운로드 처리 중 오류가 발생했습니다.');
