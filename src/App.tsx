@@ -213,11 +213,20 @@ export default function App() {
 
   if (currentView === 'portal') {
     return (
-      <PortalSelectionPage
-        company={company}
-        onSelectAdmin={() => setCurrentView('dashboard')}
-        onSelectEvaluation={() => setCurrentView('guide')}
-      />
+      <>
+        <PortalSelectionPage
+          company={company}
+          onSelectAdmin={() => setCurrentView('dashboard')}
+          onSelectEvaluation={() => setCurrentView('guide')}
+          onOpenSupabaseModal={() => setIsSupabaseModalOpen(true)}
+        />
+        <SupabaseSyncModal
+          isOpen={isSupabaseModalOpen}
+          onClose={() => setIsSupabaseModalOpen(false)}
+          company={company}
+          groups={groups}
+        />
+      </>
     );
   }
 
@@ -242,6 +251,7 @@ export default function App() {
         }}
         onOpenExcelAiModal={() => setIsExcelAiModalOpen(true)}
         onOpenInnoBizAppModal={() => setIsInnoBizAppModalOpen(true)}
+        onOpenSupabaseModal={() => setIsSupabaseModalOpen(true)}
       />
 
       {/* Main Container / View Switching: Dashboard vs Guide vs Stats */}

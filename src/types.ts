@@ -26,6 +26,7 @@ export interface DocumentItem {
   points?: number; // 배점 (예: 30, 113)
   currentStatus?: string; // 현황 (예: "2.08%", "2024년 매출 133.5억 / 순이익 6.7억")
   evidenceDocNames?: string[]; // 주요 증빙 자료 목록
+  targetEvalItem?: string; // 매핑된 평가 항목명
   isRequired: boolean;
   status: DocumentStatus;
   formatGuide: string;
@@ -162,5 +163,7 @@ export interface SelfAuditGuideItem {
   practicalTip?: string; // 실사위원 현장 방문 시 핵심 착안사항
   linkedGroupId?: string; // 대시보드 내 매핑되는 문서 그룹 ID
   linkedDocTemplateId?: string; // 자동생성 연계 문서 서식 ID (예: 'doc-job-invention')
+  matchedGroupIds?: string[]; // 연계 실무 문서 그룹 ID 목록
+  recommendedDocTemplateId?: string; // 추천 실무 서류 템플릿 ID
   currentStatusNote?: string; // 기업 현황 메모
 }
