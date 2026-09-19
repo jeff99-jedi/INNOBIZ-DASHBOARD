@@ -417,14 +417,34 @@ export const RowDocumentUploadModal: React.FC<RowDocumentUploadModalProps> = ({
               {/* Uploaded Files List */}
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <h4 className="font-bold text-slate-800 text-xs">
-                    등록된 서류 목록 ({attachments.length}건)
+                  <h4 className="font-bold text-slate-800 text-xs flex items-center gap-1.5">
+                    <span>등록된 서류 목록 ({attachments.length}건)</span>
                   </h4>
-                  {attachments.length > 0 && (
-                    <span className="text-[11px] text-emerald-700 font-semibold bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded">
-                      ✓ 실사 대응 준비 완료
-                    </span>
-                  )}
+                  <div className="flex items-center gap-2">
+                    {attachments.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          showToast(`총 ${attachments.length}개 파일 일괄 다운로드를 시작합니다...`);
+                          for (let i = 0; i < attachments.length; i++) {
+                            await handleDownloadAttachment(attachments[i]);
+                            await new Promise((r) => setTimeout(r, 600));
+                          }
+                          showToast('모든 파일의 다운로드가 완료되었습니다.');
+                        }}
+                        className="px-2.5 py-1 text-[11px] font-bold bg-blue-50 hover:bg-blue-600 text-blue-700 hover:text-white border border-blue-200 hover:border-blue-600 rounded-lg flex items-center gap-1 transition-all cursor-pointer shadow-2xs"
+                        title="등록된 파일 전체 다운로드"
+                      >
+                        <Download className="w-3 h-3" />
+                        <span>전체 다운로드</span>
+                      </button>
+                    )}
+                    {attachments.length > 0 && (
+                      <span className="text-[11px] text-emerald-700 font-semibold bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded">
+                        ✓ 실사 대응 준비 완료
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 {attachments.length === 0 ? (

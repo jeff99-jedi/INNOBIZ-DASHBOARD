@@ -36,8 +36,10 @@ import {
   Square,
   Download,
 } from 'lucide-react';
-import { CompanyProfile, DocumentGroup, SelfAuditGuideItem, SelfAuditOption } from '../types';
+import { CompanyProfile, DocumentAttachment, DocumentGroup, SelfAuditGuideItem, SelfAuditOption } from '../types';
 import { SELF_AUDIT_PARTS, SELF_AUDIT_GUIDE_ITEMS } from '../data/selfAuditGuideData';
+import { generateDocumentsForCompany, GeneratedDocTemplate } from '../data/generatedDocTemplates';
+import { ItemDownloadModal } from './ItemDownloadModal';
 
 interface SelfAuditGuidePageProps {
   company: CompanyProfile;
@@ -208,6 +210,50 @@ export const SelfAuditGuidePage: React.FC<SelfAuditGuidePageProps> = ({
 
   // Modal for [평균 교육평가 훈련비용 파일 다운받기]
   const [showTrainingCostModal, setShowTrainingCostModal] = useState(false);
+
+  // Modal for item-specific downloads (all registered files)
+  const [downloadModalItem, setDownloadModalItem] = useState<SelfAuditGuideItem | null>(null);
+
+  // Pre-generate templates map for rapid lookup
+  const companyTemplates = useMemo(() => {
+    return generateDocumentsForCompany(company);
+  }, [company]);
+
+  const templateByDocId = useMemo(() => {
+    const map = new Map<string, GeneratedDocTemplate>();
+    companyTemplates.forEach((t) => map.set(t.id, t));
+    return map;
+  }, [companyTemplates]);
+
+  // Helper to fetch user attachments stored in localStorage or linked groups
+  const getItemAttachments = (item: SelfAuditGuideItem): DocumentAttachment[] => {
+    // 1. Search in localStorage by direct row key
+    try {
+      const directLocalKey = `row_attach_${item.evalItemName}`;
+      const direct = localStorage.getItem(directLocalKey);
+      if (direct) {
+        const parsed = JSON.parse(direct);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {
+      // ignore
+    }
+
+    // 2. Search in groups by matching targetEvalItem or title
+    for (const grp of groups) {
+      for (const doc of grp.documents) {
+        const isMatch =
+          (item.linkedDocTemplateId && doc.id === item.linkedDocTemplateId) ||
+          doc.title.includes(item.evalItemName) ||
+          item.evalItemName.includes(doc.title) ||
+          (doc.targetEvalItem && doc.targetEvalItem.includes(item.evalItemName));
+        if (isMatch && doc.attachments && doc.attachments.length > 0) {
+          return doc.attachments;
+        }
+      }
+    }
+    return [];
+  };
 
   // Track active item for right column inspection (defaults to first item)
   const [activeItemId, setActiveItemId] = useState<string>(() => {
@@ -1187,7 +1233,17 @@ export const SelfAuditGuidePage: React.FC<SelfAuditGuidePageProps> = ({
                           연계 실무 문서그룹: <strong>{item.matchedGroupIds?.join(', ') || '전체 그룹 연동'}</strong>
                         </div>
 
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <button
+                            type="button"
+                            onClick={() => setDownloadModalItem(item)}
+                            className="px-3 py-1.5 bg-blue-50 hover:bg-blue-600 text-blue-700 hover:text-white border border-blue-200 hover:border-blue-600 rounded-lg text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-2xs transition-all"
+                            title="등록된 모든 대응서류 및 증빙 파일 목록 보기 / 다운로드"
+                          >
+                            <Download className="w-3.5 h-3.5" />
+                            <span>증빙/서류 다운로드</span>
+                          </button>
+
                           {item.recommendedDocTemplateId && (
                             <button
                               type="button"
@@ -1319,8 +1375,17 @@ export const SelfAuditGuidePage: React.FC<SelfAuditGuidePageProps> = ({
             </div>
           )}
 
-          {/* Quick Action: Auto-Doc Generation & Group link */}
+          {/* Quick Action: Download Registered Files, Auto-Doc Generation & Group link */}
           <div className="space-y-1.5 pt-1">
+            <button
+              type="button"
+              onClick={() => setDownloadModalItem(activeItem)}
+              className="w-full py-2.5 px-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-2 shadow-xs cursor-pointer"
+            >
+              <Download className="w-4 h-4" />
+              <span>등록 서류/증빙 전체 다운로드</span>
+            </button>
+
             {activeItem.recommendedDocTemplateId && (
               <button
                 type="button"
@@ -1558,6 +1623,25 @@ export const SelfAuditGuidePage: React.FC<SelfAuditGuidePageProps> = ({
           </div>
         </div>
       </div>
+    )}
+
+    {/* =========================================================================
+        MODAL 3: 평가항목 등록 서류 및 증빙 다운로드 모달
+       ========================================================================= */}
+    {downloadModalItem && (
+      <ItemDownloadModal
+        isOpen={!!downloadModalItem}
+        onClose={() => setDownloadModalItem(null)}
+        item={downloadModalItem}
+        company={company}
+        selectedOptionNumber={selectedOptions[downloadModalItem.id]}
+        template={
+          downloadModalItem.linkedDocTemplateId
+            ? templateByDocId.get(downloadModalItem.linkedDocTemplateId) || null
+            : null
+        }
+        uploadedAttachments={getItemAttachments(downloadModalItem)}
+      />
     )}
     </div>
   );

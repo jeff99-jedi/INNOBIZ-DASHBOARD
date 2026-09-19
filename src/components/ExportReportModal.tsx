@@ -5,6 +5,7 @@ import { generateDocumentsForCompany, GeneratedDocTemplate } from '../data/gener
 import { convertImageUrlToBase64Png } from '../utils/imageUtils';
 import { convertMarkdownToRichHtml } from './AutoDocGeneratorModal';
 import { getAttachmentBlob } from '../utils/fileStorage';
+import { ItemDownloadModal } from './ItemDownloadModal';
 import {
   X,
   Download,
@@ -19,7 +20,8 @@ import {
   FileDown,
   Paperclip,
   CheckCircle2,
-  Loader2
+  Loader2,
+  FolderArchive
 } from 'lucide-react';
 
 interface ExportReportModalProps {
@@ -55,6 +57,7 @@ export const ExportReportModal: React.FC<ExportReportModalProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [downloadToast, setDownloadToast] = useState<string | null>(null);
+  const [selectedItemForDownload, setSelectedItemForDownload] = useState<SelfAuditGuideItem | null>(null);
 
   const showToast = (msg: string) => {
     setDownloadToast(msg);
@@ -530,52 +533,23 @@ ${item.optionalDocs && item.optionalDocs.length > 0 ? `\n### 4. 보조 및 가�
                             <td className="py-3 px-3 text-center w-36 min-w-[120px]">
                               {(() => {
                                 const attachments = getItemAttachments(item);
-                                const isDownloadingDoc = downloadingId === item.id;
 
                                 return (
                                   <div className="flex flex-col items-center gap-1.5">
-                                    {/* Primary Action: Standard Word Document Download */}
                                     <button
                                       type="button"
-                                      onClick={() => handleDownloadSingleDoc(item)}
-                                      disabled={isDownloadingDoc}
-                                      className="w-full max-w-[110px] px-2.5 py-1.5 text-xs font-semibold bg-blue-50 hover:bg-blue-600 text-blue-700 hover:text-white border border-blue-200 hover:border-blue-600 rounded-lg inline-flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs whitespace-nowrap disabled:opacity-50"
-                                      title="표준 대응서류 다운로드 (Word/Doc)"
+                                      onClick={() => setSelectedItemForDownload(item)}
+                                      className="w-full max-w-[110px] px-2.5 py-1.5 text-xs font-semibold bg-blue-50 hover:bg-blue-600 text-blue-700 hover:text-white border border-blue-200 hover:border-blue-600 rounded-lg inline-flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs whitespace-nowrap"
+                                      title="등록된 모든 대응서류 및 증빙 파일 목록 보기 / 다운로드"
                                     >
-                                      {isDownloadingDoc ? (
-                                        <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0" />
-                                      ) : (
-                                        <Download className="w-3.5 h-3.5 shrink-0" />
-                                      )}
-                                      <span className="whitespace-nowrap">
-                                        {isDownloadingDoc ? '생성 중...' : '다운로드'}
-                                      </span>
+                                      <Download className="w-3.5 h-3.5 shrink-0" />
+                                      <span className="whitespace-nowrap">다운로드</span>
                                     </button>
 
-                                    {/* Additional: If custom uploaded attachments exist for this item */}
                                     {attachments.length > 0 && (
-                                      <div className="w-full flex flex-col gap-1 mt-0.5">
-                                        {attachments.slice(0, 2).map((att) => {
-                                          const isDownloadingAtt = downloadingId === att.id;
-                                          return (
-                                            <button
-                                              key={att.id}
-                                              type="button"
-                                              onClick={() => handleDownloadAttachment(att)}
-                                              disabled={isDownloadingAtt}
-                                              className="w-full max-w-[110px] px-2 py-1 text-[11px] font-medium bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white border border-emerald-200 hover:border-emerald-600 rounded inline-flex items-center justify-center gap-1 transition-colors cursor-pointer truncate"
-                                              title={`첨부파일: ${att.name} 다운로드`}
-                                            >
-                                              {isDownloadingAtt ? (
-                                                <Loader2 className="w-3 h-3 animate-spin shrink-0" />
-                                              ) : (
-                                                <Paperclip className="w-3 h-3 shrink-0" />
-                                              )}
-                                              <span className="truncate max-w-[70px]">{att.name}</span>
-                                            </button>
-                                          );
-                                        })}
-                                      </div>
+                                      <span className="text-[10px] text-emerald-700 font-semibold bg-emerald-50 border border-emerald-200 px-1.5 py-0.2 rounded whitespace-nowrap">
+                                        첨부 {attachments.length}건
+                                      </span>
                                     )}
 
                                     {hasTemplate && (
@@ -615,6 +589,23 @@ ${item.optionalDocs && item.optionalDocs.length > 0 ? `\n### 4. 보조 및 가�
           </div>
         </div>
       </div>
+
+      {/* Item Download Popup Modal for All Registered Files */}
+      {selectedItemForDownload && (
+        <ItemDownloadModal
+          isOpen={!!selectedItemForDownload}
+          onClose={() => setSelectedItemForDownload(null)}
+          item={selectedItemForDownload}
+          company={company}
+          selectedOptionNumber={selectedOptions[selectedItemForDownload.id]}
+          template={
+            selectedItemForDownload.linkedDocTemplateId
+              ? templateByDocId.get(selectedItemForDownload.linkedDocTemplateId) || null
+              : null
+          }
+          uploadedAttachments={getItemAttachments(selectedItemForDownload)}
+        />
+      )}
     </div>
   );
 };
