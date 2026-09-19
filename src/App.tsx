@@ -267,6 +267,7 @@ export default function App() {
           onBackToDashboard={() => setCurrentView('dashboard')}
           onBackToPortal={() => setCurrentView('portal')}
           onOpenStats={() => setCurrentView('stats')}
+          onOpenExportModal={() => setIsExportModalOpen(true)}
         />
       ) : currentView === 'stats' ? (
         <AuditStatisticsPage

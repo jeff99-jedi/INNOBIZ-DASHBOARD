@@ -35,11 +35,14 @@ import {
   X,
   Square,
   Download,
+  Paperclip,
+  FolderDown,
 } from 'lucide-react';
 import { CompanyProfile, DocumentAttachment, DocumentGroup, SelfAuditGuideItem, SelfAuditOption } from '../types';
 import { SELF_AUDIT_PARTS, SELF_AUDIT_GUIDE_ITEMS } from '../data/selfAuditGuideData';
 import { generateDocumentsForCompany, GeneratedDocTemplate } from '../data/generatedDocTemplates';
 import { ItemDownloadModal } from './ItemDownloadModal';
+import { getSavedAttachmentsForItem } from '../utils/fileStorage';
 
 interface SelfAuditGuidePageProps {
   company: CompanyProfile;
@@ -49,6 +52,7 @@ interface SelfAuditGuidePageProps {
   onBackToDashboard: () => void;
   onBackToPortal?: () => void;
   onOpenStats?: () => void;
+  onOpenExportModal?: () => void;
 }
 
 const CHECK_STORAGE_KEY = 'innobiz_self_audit_checklist_v2';
@@ -158,6 +162,7 @@ export const SelfAuditGuidePage: React.FC<SelfAuditGuidePageProps> = ({
   onBackToDashboard,
   onBackToPortal,
   onOpenStats,
+  onOpenExportModal,
 }) => {
   const [selectedPartId, setSelectedPartId] = useState<'all' | 'part1' | 'part2' | 'part3' | 'part4'>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -227,19 +232,7 @@ export const SelfAuditGuidePage: React.FC<SelfAuditGuidePageProps> = ({
 
   // Helper to fetch user attachments stored in localStorage or linked groups
   const getItemAttachments = (item: SelfAuditGuideItem): DocumentAttachment[] => {
-    // 1. Search in localStorage by direct row key
-    try {
-      const directLocalKey = `row_attach_${item.evalItemName}`;
-      const direct = localStorage.getItem(directLocalKey);
-      if (direct) {
-        const parsed = JSON.parse(direct);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-      }
-    } catch (e) {
-      // ignore
-    }
-
-    // 2. Search in groups by matching targetEvalItem or title
+    // 1. Search in groups by matching targetEvalItem or title
     for (const grp of groups) {
       for (const doc of grp.documents) {
         const isMatch =
@@ -252,6 +245,16 @@ export const SelfAuditGuidePage: React.FC<SelfAuditGuidePageProps> = ({
         }
       }
     }
+
+    // 2. Search using universal storage lookup across all key variations
+    const saved = getSavedAttachmentsForItem({
+      id: item.id,
+      evalItemCode: item.evalItemCode,
+      evalItemName: item.evalItemName,
+      evalItem: `${item.evalItemCode} ${item.evalItemName}`,
+    });
+    if (saved && saved.length > 0) return saved;
+
     return [];
   };
 
@@ -263,6 +266,19 @@ export const SelfAuditGuidePage: React.FC<SelfAuditGuidePageProps> = ({
   const [filterCompletedOnly, setFilterCompletedOnly] = useState<'all' | 'completed' | 'pending'>('all');
   const [copiedSummary, setCopiedSummary] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [attachmentRefreshKey, setAttachmentRefreshKey] = useState(0);
+
+  useEffect(() => {
+    const handleUpdate = () => {
+      setAttachmentRefreshKey((k) => k + 1);
+    };
+    window.addEventListener('storage', handleUpdate);
+    window.addEventListener('innobiz-attachments-updated', handleUpdate);
+    return () => {
+      window.removeEventListener('storage', handleUpdate);
+      window.removeEventListener('innobiz-attachments-updated', handleUpdate);
+    };
+  }, []);
 
   // Persist checklist
   useEffect(() => {
@@ -818,6 +834,17 @@ export const SelfAuditGuidePage: React.FC<SelfAuditGuidePageProps> = ({
                   </div>
 
                   <div className="flex items-center gap-2">
+                    {onOpenExportModal && (
+                      <button
+                        type="button"
+                        onClick={onOpenExportModal}
+                        className="px-2.5 py-1 text-xs text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors font-bold flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                        title="전체 평가지표 자료실 및 첨부파일 다운로드 열기"
+                      >
+                        <FolderDown className="w-3.5 h-3.5 text-blue-600" />
+                        <span>전체 자료실</span>
+                      </button>
+                    )}
                     <button
                       type="button"
                       onClick={handleExpandAll}
@@ -1362,6 +1389,45 @@ export const SelfAuditGuidePage: React.FC<SelfAuditGuidePageProps> = ({
                 </div>
               ))}
             </div>
+
+            {/* User Uploaded / Saved Evidence Files if any */}
+            {(() => {
+              const activeAttachs = getItemAttachments(activeItem);
+              if (activeAttachs.length === 0) return null;
+              return (
+                <div className="mt-3 pt-3 border-t border-slate-100 space-y-1.5">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-bold text-slate-800 flex items-center gap-1">
+                      <Paperclip className="w-3.5 h-3.5 text-blue-600" />
+                      등록된 실무 첨부파일
+                    </span>
+                    <span className="text-blue-700 bg-blue-50 font-bold px-1.5 py-0.5 rounded text-[11px]">
+                      {activeAttachs.length}건
+                    </span>
+                  </div>
+                  <div className="space-y-1 max-h-36 overflow-y-auto">
+                    {activeAttachs.map((att) => (
+                      <div
+                        key={att.id}
+                        className="p-2 bg-emerald-50/80 border border-emerald-200 rounded-lg text-xs flex items-center justify-between gap-1.5"
+                      >
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <FileText className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                          <span className="truncate text-slate-800 font-medium text-[11px]" title={att.name}>
+                            {att.name}
+                          </span>
+                        </div>
+                        {att.size && (
+                          <span className="text-[10px] text-slate-400 shrink-0">
+                            {(att.size / 1024).toFixed(0)}KB
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
           </div>
 
           {/* Practical Tip note if present */}
@@ -1384,6 +1450,17 @@ export const SelfAuditGuidePage: React.FC<SelfAuditGuidePageProps> = ({
             >
               <Download className="w-4 h-4" />
               <span>등록 서류/증빙 전체 다운로드</span>
+              {(() => {
+                const count = getItemAttachments(activeItem).length;
+                if (count > 0) {
+                  return (
+                    <span className="bg-amber-400 text-slate-900 text-[10px] font-black px-1.5 py-0.2 rounded-full">
+                      {count}
+                    </span>
+                  );
+                }
+                return null;
+              })()}
             </button>
 
             {activeItem.recommendedDocTemplateId && (

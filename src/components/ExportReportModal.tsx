@@ -1,10 +1,10 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { CompanyProfile, DocumentAttachment, DocumentGroup, SelfAuditGuideItem, SelfAuditOption } from '../types';
 import { SELF_AUDIT_PARTS, SELF_AUDIT_GUIDE_ITEMS } from '../data/selfAuditGuideData';
 import { generateDocumentsForCompany, GeneratedDocTemplate } from '../data/generatedDocTemplates';
 import { convertImageUrlToBase64Png } from '../utils/imageUtils';
 import { convertMarkdownToRichHtml } from './AutoDocGeneratorModal';
-import { getAttachmentBlob } from '../utils/fileStorage';
+import { getAttachmentBlob, getSavedAttachmentsForItem } from '../utils/fileStorage';
 import { ItemDownloadModal } from './ItemDownloadModal';
 import {
   X,
@@ -58,6 +58,19 @@ export const ExportReportModal: React.FC<ExportReportModalProps> = ({
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [downloadToast, setDownloadToast] = useState<string | null>(null);
   const [selectedItemForDownload, setSelectedItemForDownload] = useState<SelfAuditGuideItem | null>(null);
+  const [attachmentRefreshKey, setAttachmentRefreshKey] = useState(0);
+
+  useEffect(() => {
+    const handleUpdate = () => {
+      setAttachmentRefreshKey((k) => k + 1);
+    };
+    window.addEventListener('storage', handleUpdate);
+    window.addEventListener('innobiz-attachments-updated', handleUpdate);
+    return () => {
+      window.removeEventListener('storage', handleUpdate);
+      window.removeEventListener('innobiz-attachments-updated', handleUpdate);
+    };
+  }, []);
 
   const showToast = (msg: string) => {
     setDownloadToast(msg);
@@ -80,7 +93,7 @@ export const ExportReportModal: React.FC<ExportReportModalProps> = ({
     return map;
   }, [generatedTemplates]);
 
-  // Find user-uploaded files for an item (from groups or localStorage)
+  // Find user-uploaded files for an item (from groups or universal storage lookup)
   const getItemAttachments = (item: SelfAuditGuideItem): DocumentAttachment[] => {
     // 1. Search in groups by targetEvalItem matching or linkedDocTemplateId
     for (const grp of groups) {
@@ -95,17 +108,15 @@ export const ExportReportModal: React.FC<ExportReportModalProps> = ({
         }
       }
     }
-    // 2. Search in localStorage by row key
-    try {
-      const localKey = `row_attach_${item.evalItemName}`;
-      const saved = localStorage.getItem(localKey);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-      }
-    } catch (e) {
-      // ignore
-    }
+    // 2. Search using universal storage lookup across all key variations
+    const saved = getSavedAttachmentsForItem({
+      id: item.id,
+      evalItemCode: item.evalItemCode,
+      evalItemName: item.evalItemName,
+      evalItem: `${item.evalItemCode} ${item.evalItemName}`,
+    });
+    if (saved && saved.length > 0) return saved;
+
     return [];
   };
 

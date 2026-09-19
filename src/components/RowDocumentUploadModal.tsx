@@ -25,7 +25,14 @@ import {
   convertClaudeMarkdownToWordDoc, 
   BUCKET_NAME 
 } from '../services/supabaseService';
-import { saveAttachmentBlob, deleteAttachmentBlob, getAttachmentBlob, downloadAttachmentFile } from '../utils/fileStorage';
+import { 
+  saveAttachmentBlob, 
+  deleteAttachmentBlob, 
+  getAttachmentBlob, 
+  downloadAttachmentFile,
+  getSavedAttachmentsForItem,
+  saveAttachmentsForItem
+} from '../utils/fileStorage';
 
 interface RowDocumentUploadModalProps {
   isOpen: boolean;
@@ -67,18 +74,12 @@ export const RowDocumentUploadModal: React.FC<RowDocumentUploadModalProps> = ({
 
   useEffect(() => {
     if (isOpen && row) {
-      // Load existing attachments from matchedDoc or localStorage
-      const localKey = `row_attach_${row.evalItem}`;
+      // Load existing attachments from matchedDoc or universal storage lookup
       let existing: DocumentAttachment[] = [];
       if (matchedDoc?.attachments && matchedDoc.attachments.length > 0) {
         existing = matchedDoc.attachments;
       } else {
-        try {
-          const saved = localStorage.getItem(localKey);
-          if (saved) existing = JSON.parse(saved);
-        } catch (e) {
-          console.warn(e);
-        }
+        existing = getSavedAttachmentsForItem({ evalItem: row.evalItem });
       }
       setAttachments(existing);
       setClaudeDocTitle(`${row.evalItem.split(' ').slice(0, 3).join(' ')} 대응계획서`);
@@ -140,12 +141,7 @@ export const RowDocumentUploadModal: React.FC<RowDocumentUploadModalProps> = ({
 
   const saveAttachmentsState = (items: DocumentAttachment[]) => {
     if (!row) return;
-    const localKey = `row_attach_${row.evalItem}`;
-    try {
-      localStorage.setItem(localKey, JSON.stringify(items));
-    } catch (e) {
-      console.warn(e);
-    }
+    saveAttachmentsForItem({ evalItem: row.evalItem }, items);
     onAttachmentsUpdated(items, items.length > 0 ? 'completed' : 'in_progress');
   };
 

@@ -97,6 +97,116 @@ export async function deleteAttachmentBlob(id: string): Promise<void> {
   }
 }
 
+/**
+ * Normalize string by removing extra spaces, dots, dashes, parentheses and converting to lowercase
+ * for robust cross-matching between sheet rows and self-audit guide items.
+ */
+export function normalizeEvalKey(str: string): string {
+  if (!str) return '';
+  return str.toLowerCase().replace(/[\s\-_().,·]/g, '');
+}
+
+/**
+ * Universal lookup for attachments associated with an evaluation item or row.
+ * Checks all possible localStorage key variants (with/without code prefix, normalized, etc.)
+ * and falls back to searching all row_attach_* keys if a close match exists.
+ */
+export function getSavedAttachmentsForItem(
+  evalIdentifier: { id?: string; evalItemCode?: string; evalItemName?: string; evalItem?: string }
+): DocumentAttachment[] {
+  try {
+    const directNames: string[] = [];
+    if (evalIdentifier.evalItem) directNames.push(evalIdentifier.evalItem);
+    if (evalIdentifier.evalItemName) directNames.push(evalIdentifier.evalItemName);
+    if (evalIdentifier.evalItemCode && evalIdentifier.evalItemName) {
+      directNames.push(`${evalIdentifier.evalItemCode} ${evalIdentifier.evalItemName}`);
+      directNames.push(`${evalIdentifier.evalItemCode}_${evalIdentifier.evalItemName}`);
+    }
+    if (evalIdentifier.id) {
+      directNames.push(evalIdentifier.id);
+    }
+
+    // 1. Check exact key matches first
+    for (const name of directNames) {
+      const key = `row_attach_${name}`;
+      const raw = localStorage.getItem(key);
+      if (raw) {
+        try {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        } catch {
+          // ignore
+        }
+      }
+    }
+
+    // 2. Check normalized fuzzy matches across all row_attach_ keys in localStorage
+    const targetNorms = directNames.map(normalizeEvalKey).filter(Boolean);
+    if (targetNorms.length > 0) {
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && k.startsWith('row_attach_')) {
+          const rawKeyName = k.replace('row_attach_', '');
+          const normKeyName = normalizeEvalKey(rawKeyName);
+
+          const isMatch = targetNorms.some(
+            (target) =>
+              normKeyName === target ||
+              (target.length >= 4 && normKeyName.includes(target)) ||
+              (normKeyName.length >= 4 && target.includes(normKeyName))
+          );
+
+          if (isMatch) {
+            const raw = localStorage.getItem(k);
+            if (raw) {
+              try {
+                const parsed = JSON.parse(raw);
+                if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+              } catch {
+                // ignore
+              }
+            }
+          }
+        }
+      }
+    }
+  } catch (e) {
+    console.warn('Failed to retrieve saved attachments:', e);
+  }
+  return [];
+}
+
+/**
+ * Save attachments to localStorage under both the item's combined name and primary keys
+ * so that both SheetMatrixView and SelfAuditGuide / ExportReportModal can seamlessly access them.
+ */
+export function saveAttachmentsForItem(
+  evalIdentifier: { evalItemCode?: string; evalItemName?: string; evalItem?: string },
+  attachments: DocumentAttachment[]
+): void {
+  try {
+    const keysToSave: string[] = [];
+    if (evalIdentifier.evalItem) {
+      keysToSave.push(`row_attach_${evalIdentifier.evalItem}`);
+    }
+    if (evalIdentifier.evalItemName) {
+      keysToSave.push(`row_attach_${evalIdentifier.evalItemName}`);
+    }
+    if (evalIdentifier.evalItemCode && evalIdentifier.evalItemName) {
+      keysToSave.push(`row_attach_${evalIdentifier.evalItemCode} ${evalIdentifier.evalItemName}`);
+    }
+
+    const payload = JSON.stringify(attachments);
+    for (const key of keysToSave) {
+      localStorage.setItem(key, payload);
+    }
+    // Also dispatch custom storage event for same-window component synchronization
+    window.dispatchEvent(new CustomEvent('innobiz-attachments-updated', { detail: { attachments } }));
+  } catch (e) {
+    console.warn('Failed to save attachments:', e);
+  }
+}
+
 export type FileCategory = 'word' | 'excel' | 'pdf' | 'image' | 'hwp' | 'general';
 
 /**

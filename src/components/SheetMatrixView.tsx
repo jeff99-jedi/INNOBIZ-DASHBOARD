@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { DocumentAttachment, DocumentGroup, DocumentItem } from '../types';
 import { RAW_SHEET_ROWS, SheetRowItem, parseEvidenceDocs } from '../data/sheetData';
 import { 
@@ -8,13 +8,14 @@ import {
   Clock, 
   Paperclip, 
   Download, 
-  ArrowUpRight,
-  Filter,
-  Upload,
-  Database,
-  Sparkles
+  ArrowUpRight, 
+  Filter, 
+  Upload, 
+  Database, 
+  Sparkles 
 } from 'lucide-react';
 import { RowDocumentUploadModal } from './RowDocumentUploadModal';
+import { getSavedAttachmentsForItem } from '../utils/fileStorage';
 
 interface SheetMatrixViewProps {
   groups: DocumentGroup[];
@@ -36,6 +37,18 @@ export const SheetMatrixView: React.FC<SheetMatrixViewProps> = ({
   const [activeUploadRow, setActiveUploadRow] = useState<SheetRowItem | null>(null);
   const [refreshTick, setRefreshTick] = useState(0);
 
+  useEffect(() => {
+    const handleUpdate = () => {
+      setRefreshTick((t) => t + 1);
+    };
+    window.addEventListener('storage', handleUpdate);
+    window.addEventListener('innobiz-attachments-updated', handleUpdate);
+    return () => {
+      window.removeEventListener('storage', handleUpdate);
+      window.removeEventListener('innobiz-attachments-updated', handleUpdate);
+    };
+  }, []);
+
   // Find document status for each sheet row
   const getDocAndGroupForRow = (row: SheetRowItem) => {
     for (const grp of groups) {
@@ -53,16 +66,7 @@ export const SheetMatrixView: React.FC<SheetMatrixViewProps> = ({
     if (document?.attachments && document.attachments.length > 0) {
       return document.attachments;
     }
-    try {
-      const saved = localStorage.getItem(`row_attach_${row.evalItem}`);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) return parsed;
-      }
-    } catch (e) {
-      // ignore
-    }
-    return [];
+    return getSavedAttachmentsForItem({ evalItem: row.evalItem });
   };
 
   const handleAttachmentsUpdated = (
