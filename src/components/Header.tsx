@@ -139,7 +139,7 @@ export const Header: React.FC<HeaderProps> = ({
               </div>
             )}
 
-            {onOpenSupabaseModal && (
+            {onOpenSupabaseModal && currentView !== 'guide' && currentView !== 'stats' && (
               <button
                 id="btn-cloud-sync"
                 type="button"

@@ -63,17 +63,6 @@ export const PortalSelectionPage: React.FC<PortalSelectionPageProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
-            {onOpenSupabaseModal && (
-              <button
-                type="button"
-                onClick={onOpenSupabaseModal}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-300 transition-colors shadow-2xs cursor-pointer"
-                title="Supabase 클라우드 데이터베이스 연동 및 실시간 백업"
-              >
-                <Database className="w-3.5 h-3.5 text-emerald-600" />
-                <span>클라우드 연동</span>
-              </button>
-            )}
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
               <Building2 className="w-3.5 h-3.5 text-blue-600" />
               <span>{company.companyName}</span>

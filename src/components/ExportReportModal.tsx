@@ -6,6 +6,8 @@ import { convertImageUrlToBase64Png } from '../utils/imageUtils';
 import { convertMarkdownToRichHtml } from './AutoDocGeneratorModal';
 import { getAttachmentBlob, getSavedAttachmentsForItem } from '../utils/fileStorage';
 import { ItemDownloadModal } from './ItemDownloadModal';
+import { RowDocumentUploadModal } from './RowDocumentUploadModal';
+import { SheetRowItem } from '../data/sheetData';
 import {
   X,
   Download,
@@ -21,7 +23,8 @@ import {
   Paperclip,
   CheckCircle2,
   Loader2,
-  FolderArchive
+  FolderArchive,
+  Upload
 } from 'lucide-react';
 
 interface ExportReportModalProps {
@@ -58,6 +61,7 @@ export const ExportReportModal: React.FC<ExportReportModalProps> = ({
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [downloadToast, setDownloadToast] = useState<string | null>(null);
   const [selectedItemForDownload, setSelectedItemForDownload] = useState<SelfAuditGuideItem | null>(null);
+  const [selectedItemForUpload, setSelectedItemForUpload] = useState<SelfAuditGuideItem | null>(null);
   const [attachmentRefreshKey, setAttachmentRefreshKey] = useState(0);
 
   useEffect(() => {
@@ -457,7 +461,7 @@ ${item.optionalDocs && item.optionalDocs.length > 0 ? `\n### 4. 보조 및 가�
                         <th className="py-2.5 px-3 w-64 text-center whitespace-nowrap">평가항목 (세부지표)</th>
                         <th className="py-2.5 px-3 w-52 text-center whitespace-nowrap">자가진단현황</th>
                         <th className="py-2.5 px-3 text-center whitespace-nowrap">구비서류</th>
-                        <th className="py-2.5 px-3 w-32 min-w-[110px] text-center whitespace-nowrap">다운로드</th>
+                        <th className="py-2.5 px-3 w-44 min-w-[140px] text-center whitespace-nowrap">다운로드 / 업로드</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-200">
@@ -540,22 +544,34 @@ ${item.optionalDocs && item.optionalDocs.length > 0 ? `\n### 4. 보조 및 가�
                               </ul>
                             </td>
 
-                            {/* 5. 다운로드버튼 */}
-                            <td className="py-3 px-3 text-center w-36 min-w-[120px]">
+                            {/* 5. 다운로드 및 업로드 버튼 */}
+                            <td className="py-3 px-3 text-center w-44 min-w-[140px]">
                               {(() => {
                                 const attachments = getItemAttachments(item);
 
                                 return (
                                   <div className="flex flex-col items-center gap-1.5">
-                                    <button
-                                      type="button"
-                                      onClick={() => setSelectedItemForDownload(item)}
-                                      className="w-full max-w-[110px] px-2.5 py-1.5 text-xs font-semibold bg-blue-50 hover:bg-blue-600 text-blue-700 hover:text-white border border-blue-200 hover:border-blue-600 rounded-lg inline-flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs whitespace-nowrap"
-                                      title="등록된 모든 대응서류 및 증빙 파일 목록 보기 / 다운로드"
-                                    >
-                                      <Download className="w-3.5 h-3.5 shrink-0" />
-                                      <span className="whitespace-nowrap">다운로드</span>
-                                    </button>
+                                    <div className="flex items-center gap-1.5 w-full justify-center">
+                                      <button
+                                        type="button"
+                                        onClick={() => setSelectedItemForDownload(item)}
+                                        className="flex-1 max-w-[80px] px-2 py-1.5 text-xs font-semibold bg-blue-50 hover:bg-blue-600 text-blue-700 hover:text-white border border-blue-200 hover:border-blue-600 rounded-lg inline-flex items-center justify-center gap-1 transition-all cursor-pointer shadow-2xs whitespace-nowrap"
+                                        title="등록된 모든 대응서류 및 증빙 파일 목록 보기 / 다운로드"
+                                      >
+                                        <Download className="w-3 h-3 shrink-0" />
+                                        <span>다운로드</span>
+                                      </button>
+
+                                      <button
+                                        type="button"
+                                        onClick={() => setSelectedItemForUpload(item)}
+                                        className="flex-1 max-w-[75px] px-2 py-1.5 text-xs font-semibold bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white border border-emerald-200 hover:border-emerald-600 rounded-lg inline-flex items-center justify-center gap-1 transition-all cursor-pointer shadow-2xs whitespace-nowrap"
+                                        title="대응 증빙서류 업로드 및 파일 관리"
+                                      >
+                                        <Upload className="w-3 h-3 shrink-0" />
+                                        <span>업로드</span>
+                                      </button>
+                                    </div>
 
                                     {attachments.length > 0 && (
                                       <span className="text-[10px] text-emerald-700 font-semibold bg-emerald-50 border border-emerald-200 px-1.5 py-0.2 rounded whitespace-nowrap">
@@ -615,6 +631,30 @@ ${item.optionalDocs && item.optionalDocs.length > 0 ? `\n### 4. 보조 및 가�
               : null
           }
           uploadedAttachments={getItemAttachments(selectedItemForDownload)}
+        />
+      )}
+
+      {/* Item Upload Modal for Evidence Files */}
+      {selectedItemForUpload && (
+        <RowDocumentUploadModal
+          isOpen={!!selectedItemForUpload}
+          onClose={() => setSelectedItemForUpload(null)}
+          row={{
+            section: selectedItemForUpload.partName,
+            majorCategory: selectedItemForUpload.majorCategory,
+            evalItem: `${selectedItemForUpload.evalItemCode} ${selectedItemForUpload.evalItemName}`,
+            points: selectedItemForUpload.points,
+            currentStatus: selectedItemForUpload.currentStatusNote || selectedItemForUpload.options[0]?.text || '',
+            evidenceDocs: selectedItemForUpload.requiredDocs.join(', '),
+          }}
+          matchedGroup={null}
+          matchedDoc={null}
+          companyName={company.companyName}
+          ceoName={company.ceoName}
+          onAttachmentsUpdated={() => {
+            setAttachmentRefreshKey((k) => k + 1);
+            showToast(`${selectedItemForUpload.evalItemName} 증빙 파일이 저장되었습니다.`);
+          }}
         />
       )}
     </div>
