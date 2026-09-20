@@ -12,10 +12,11 @@ import {
   Filter, 
   Upload, 
   Database, 
-  Sparkles 
+  Sparkles,
+  Trash2
 } from 'lucide-react';
 import { RowDocumentUploadModal } from './RowDocumentUploadModal';
-import { getSavedAttachmentsForItem } from '../utils/fileStorage';
+import { getSavedAttachmentsForItem, saveAttachmentsForItem, deleteAttachmentBlob } from '../utils/fileStorage';
 
 interface SheetMatrixViewProps {
   groups: DocumentGroup[];
@@ -96,6 +97,19 @@ export const SheetMatrixView: React.FC<SheetMatrixViewProps> = ({
     }
     // 2. Force re-render
     setRefreshTick((t) => t + 1);
+  };
+
+  const handleQuickDeleteRowAttachments = async (row: SheetRowItem) => {
+    const { document } = getDocAndGroupForRow(row);
+    const current = getRowAttachments(row, document);
+    if (current.length === 0) return;
+    if (!window.confirm(`'${row.evalItem}' 항목에 등록된 서류 ${current.length}건을 모두 삭제하시겠습니까?`)) return;
+
+    for (const att of current) {
+      await deleteAttachmentBlob(att.id);
+    }
+    saveAttachmentsForItem({ evalItem: row.evalItem }, []);
+    handleAttachmentsUpdated(row, [], 'in_progress');
   };
 
   const filteredRows = RAW_SHEET_ROWS.filter((row) => {
@@ -223,7 +237,7 @@ export const SheetMatrixView: React.FC<SheetMatrixViewProps> = ({
               <th className="py-2.5 px-3 w-44">기업 현황 (시트 기재값)</th>
               <th className="py-2.5 px-3 min-w-[220px]">주요 증빙 자료 (필수 서류)</th>
               <th className="py-2.5 px-3 w-48">배치된 문서 그룹</th>
-              <th className="py-2.5 px-3 w-36 text-center whitespace-nowrap">서류 업로드 / 현황</th>
+              <th className="py-2.5 px-3 w-40 text-center whitespace-nowrap">서류 업로드 및 삭제 / 현황</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-200">
@@ -297,15 +311,15 @@ export const SheetMatrixView: React.FC<SheetMatrixViewProps> = ({
                       const effectiveStatus = hasAttachments ? 'completed' : (document?.status || 'in_progress');
 
                       return (
-                        <div className="flex flex-col items-center gap-1.5 min-w-[105px]">
+                        <div className="flex flex-col items-center gap-1.5 min-w-[125px]">
                           <button
                             type="button"
                             onClick={() => setActiveUploadRow(row)}
                             className="w-full px-2.5 py-1 text-xs font-bold text-blue-700 hover:text-white bg-blue-50 hover:bg-blue-600 border border-blue-200 hover:border-blue-600 rounded-lg inline-flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs whitespace-nowrap"
-                            title="대응서류 업로드 (Supabase Storage / Claude / 로컬)"
+                            title="대응서류 업로드 및 삭제 관리 (Supabase Storage / Claude / 로컬)"
                           >
                             <Upload className="w-3.5 h-3.5 shrink-0" />
-                            <span>업로드</span>
+                            <span>업로드 및 삭제</span>
                           </button>
 
                           <div className="flex items-center gap-1 flex-wrap justify-center">
@@ -325,14 +339,25 @@ export const SheetMatrixView: React.FC<SheetMatrixViewProps> = ({
                               </span>
                             )}
                             {rowAttachs.length > 0 && (
-                              <button
-                                type="button"
-                                onClick={() => setActiveUploadRow(row)}
-                                className="text-[10px] text-blue-700 font-semibold bg-blue-50/90 border border-blue-200 hover:bg-blue-100 px-1.5 py-0.5 rounded cursor-pointer transition-colors"
-                                title="등록된 서류 목록 확인"
-                              >
-                                📎 {rowAttachs.length}건
-                              </button>
+                              <div className="flex items-center gap-1">
+                                <button
+                                  type="button"
+                                  onClick={() => setActiveUploadRow(row)}
+                                  className="text-[10px] text-blue-700 font-semibold bg-blue-50/90 border border-blue-200 hover:bg-blue-100 px-1.5 py-0.5 rounded cursor-pointer transition-colors"
+                                  title="등록된 서류 목록 확인 및 파일별 삭제"
+                                >
+                                  📎 {rowAttachs.length}건
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleQuickDeleteRowAttachments(row)}
+                                  className="text-[10px] text-rose-600 hover:text-white bg-rose-50 hover:bg-rose-600 border border-rose-200 hover:border-rose-600 px-1.5 py-0.5 rounded cursor-pointer transition-colors flex items-center gap-0.5 font-bold"
+                                  title="이 항목의 등록 서류 전체 삭제"
+                                >
+                                  <Trash2 className="w-2.5 h-2.5" />
+                                  <span>삭제</span>
+                                </button>
+                              </div>
                             )}
                           </div>
                         </div>
@@ -352,7 +377,7 @@ export const SheetMatrixView: React.FC<SheetMatrixViewProps> = ({
           총 <strong>{filteredRows.length}</strong>개 평가항목 표시 중 (총 배점: <strong>{filteredRows.reduce((acc, r) => acc + r.points, 0)}점</strong>)
         </div>
         <div className="text-slate-400 text-[11px] flex items-center gap-2">
-          <span>각 행의 [업로드]를 통해 Supabase 클라우드 또는 클로드(Claude) 작업 서류를 즉시 등록할 수 있습니다.</span>
+          <span>각 행의 [업로드 및 삭제]를 통해 Supabase 클라우드 또는 클로드(Claude) 작업 서류를 즉시 등록하고 삭제/관리할 수 있습니다.</span>
         </div>
       </div>
 

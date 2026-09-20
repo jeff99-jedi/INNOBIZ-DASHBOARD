@@ -285,7 +285,7 @@ export default function App() {
         <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
           {/* Prominent "Where to see & Sheet Mapping" Callout Card */}
           <div className="bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 text-white rounded-2xl p-5 sm:p-6 mb-6 shadow-md relative overflow-hidden">
-            <div className="relative z-10 max-w-3xl">
+            <div className="relative z-10 max-w-5xl">
               <div className="flex items-center gap-2 flex-wrap mb-2.5">
                 <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white/10 rounded-full text-xs font-semibold text-blue-200 backdrop-blur-xs">
                   <Sparkles className="w-3.5 h-3.5 text-amber-300" />
@@ -308,15 +308,18 @@ export default function App() {
                 사내 엑셀 문서(.xlsx, .csv)를 올리면 <strong>AI가 데이터를 분석하여 구글 독스 규격의 서술 보고서로 자동 변환하고 알맞은 평가지표 문서그룹에 원클릭 등록</strong>합니다.
               </p>
 
-              <div className="mt-4 flex flex-wrap items-center gap-2.5">
+              {/* Organized Feature Buttons Grid */}
+              <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
                 <button
                   type="button"
                   onClick={() => setCurrentView('guide')}
-                  className="px-4 py-2 bg-gradient-to-r from-blue-500 via-indigo-600 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white text-xs sm:text-sm font-bold rounded-xl shadow-xs transition-all flex items-center gap-2 cursor-pointer ring-2 ring-blue-400/40"
+                  className="px-3.5 py-2.5 bg-gradient-to-r from-blue-500 via-indigo-600 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white text-xs sm:text-sm font-bold rounded-xl shadow-xs transition-all flex items-center justify-between gap-2 cursor-pointer ring-1 ring-blue-400/40 hover:scale-[1.01]"
                 >
-                  <BookOpen className="w-4 h-4 text-amber-300" />
-                  <span>📘 자가진단 파트별 실무안내서</span>
-                  <span className="px-1.5 py-0.5 text-xs rounded-full bg-amber-400 text-slate-950 font-black">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <BookOpen className="w-4 h-4 text-amber-300 shrink-0" />
+                    <span className="truncate">📘 자가진단 파트별 실무안내서</span>
+                  </div>
+                  <span className="px-1.5 py-0.5 text-[11px] rounded-full bg-amber-400 text-slate-950 font-black shrink-0">
                     초안
                   </span>
                 </button>
@@ -324,19 +327,19 @@ export default function App() {
                 <button
                   type="button"
                   onClick={() => setIsInnoBizAppModalOpen(true)}
-                  className="px-4 py-2 bg-gradient-to-r from-red-600 to-rose-700 hover:from-red-700 hover:to-rose-800 text-white text-xs sm:text-sm font-bold rounded-xl shadow-xs transition-all flex items-center gap-2 cursor-pointer ring-2 ring-red-400/40"
+                  className="px-3.5 py-2.5 bg-gradient-to-r from-red-600 to-rose-700 hover:from-red-700 hover:to-rose-800 text-white text-xs sm:text-sm font-bold rounded-xl shadow-xs transition-all flex items-center gap-2 cursor-pointer ring-1 ring-red-400/40 hover:scale-[1.01]"
                 >
-                  <Building2 className="w-4 h-4 text-white" />
-                  <span>📝 기업현황·재무사항 입력 (공식 서식)</span>
+                  <Building2 className="w-4 h-4 text-white shrink-0" />
+                  <span className="truncate">📝 기업현황·재무사항 입력 (공식)</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => setIsExcelAiModalOpen(true)}
-                  className="px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-xs sm:text-sm font-bold rounded-xl shadow-xs transition-all flex items-center gap-2 cursor-pointer ring-2 ring-emerald-400/30"
+                  className="px-3.5 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-xs sm:text-sm font-bold rounded-xl shadow-xs transition-all flex items-center gap-2 cursor-pointer ring-1 ring-emerald-400/30 hover:scale-[1.01]"
                 >
-                  <FileSpreadsheet className="w-4 h-4 text-emerald-200" />
-                  <span>📊 엑셀 → 구글 독스/이노비즈 AI 자동 변환</span>
+                  <FileSpreadsheet className="w-4 h-4 text-emerald-200 shrink-0" />
+                  <span className="truncate">📊 엑셀 → 구글독스/AI 자동변환</span>
                 </button>
 
                 <button
@@ -345,26 +348,27 @@ export default function App() {
                     setAutoDocInitialId(undefined);
                     setIsAutoDocModalOpen(true);
                   }}
-                  className="px-4 py-2 bg-gradient-to-r from-indigo-500 to-blue-600 hover:from-indigo-600 hover:to-blue-700 text-white text-xs sm:text-sm font-bold rounded-xl shadow-xs transition-all flex items-center gap-2 cursor-pointer ring-2 ring-indigo-400/30"
+                  className="px-3.5 py-2.5 bg-gradient-to-r from-indigo-500 to-blue-600 hover:from-indigo-600 hover:to-blue-700 text-white text-xs sm:text-sm font-bold rounded-xl shadow-xs transition-all flex items-center gap-2 cursor-pointer ring-1 ring-indigo-400/30 hover:scale-[1.01]"
                 >
-                  <Sparkles className="w-4 h-4 text-amber-300" />
-                  <span>✨ 실무 서류 자동생성 (회사명·로고 삽입)</span>
+                  <Sparkles className="w-4 h-4 text-amber-300 shrink-0" />
+                  <span className="truncate">✨ 실무 서류 자동생성</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => setViewMode(viewMode === 'cards' ? 'matrix' : 'cards')}
-                  className="px-3.5 py-2 bg-white/10 hover:bg-white/20 text-white text-xs sm:text-sm font-semibold rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer"
+                  className="px-3.5 py-2.5 bg-white/10 hover:bg-white/20 text-white text-xs sm:text-sm font-semibold rounded-xl transition-all flex items-center gap-2 cursor-pointer ring-1 ring-white/20 hover:scale-[1.01]"
+                  title="시트 표 보기 (자료등륵)"
                 >
                   {viewMode === 'cards' ? (
                     <>
-                      <FileSpreadsheet className="w-4 h-4 text-slate-300" />
-                      <span>시트 표 보기</span>
+                      <FileSpreadsheet className="w-4 h-4 text-cyan-300 shrink-0" />
+                      <span className="truncate">📑 시트 표 보기 (자료등륵)</span>
                     </>
                   ) : (
                     <>
-                      <LayoutGrid className="w-4 h-4 text-slate-300" />
-                      <span>카드 뷰 보기</span>
+                      <LayoutGrid className="w-4 h-4 text-amber-300 shrink-0" />
+                      <span className="truncate">🗂️ 카드 뷰 보기</span>
                     </>
                   )}
                 </button>
@@ -372,20 +376,20 @@ export default function App() {
                 <button
                   type="button"
                   onClick={() => setIsExportModalOpen(true)}
-                  className="px-3.5 py-2 bg-white/10 hover:bg-white/20 text-white text-xs sm:text-sm font-semibold rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer"
+                  className="px-3.5 py-2.5 bg-white/10 hover:bg-white/20 text-white text-xs sm:text-sm font-semibold rounded-xl transition-all flex items-center gap-2 cursor-pointer ring-1 ring-white/20 hover:scale-[1.01]"
                 >
-                  <FileCheck2 className="w-4 h-4 text-slate-300" />
-                  <span>실사 점검표</span>
+                  <FileCheck2 className="w-4 h-4 text-emerald-300 shrink-0" />
+                  <span className="truncate">📋 실사 점검표 및 자료실</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => setIsSupabaseModalOpen(true)}
-                  className="px-3.5 py-2 bg-emerald-600/80 hover:bg-emerald-600 text-white text-xs sm:text-sm font-bold rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs border border-emerald-400/40"
+                  className="px-3.5 py-2.5 bg-emerald-600/80 hover:bg-emerald-600 text-white text-xs sm:text-sm font-bold rounded-xl transition-all flex items-center gap-2 cursor-pointer ring-1 ring-emerald-400/40 sm:col-span-2 lg:col-span-3 hover:scale-[1.005]"
                   title="Supabase 클라우드 데이터베이스 연동 및 실시간 백업"
                 >
-                  <Database className="w-4 h-4 text-emerald-200" />
-                  <span>🗄️ Supabase 클라우드 DB 연동</span>
+                  <Database className="w-4 h-4 text-emerald-200 shrink-0" />
+                  <span className="truncate">🗄️ Supabase 클라우드 DB 연동 및 실시간 백업</span>
                 </button>
               </div>
             </div>

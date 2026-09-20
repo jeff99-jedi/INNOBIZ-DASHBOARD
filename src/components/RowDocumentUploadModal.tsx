@@ -146,11 +146,23 @@ export const RowDocumentUploadModal: React.FC<RowDocumentUploadModalProps> = ({
   };
 
   const handleDeleteAttachment = async (attachId: string) => {
+    if (!window.confirm('이 첨부파일을 삭제하시겠습니까?')) return;
     await deleteAttachmentBlob(attachId);
     const filtered = attachments.filter((a) => a.id !== attachId);
     setAttachments(filtered);
     saveAttachmentsState(filtered);
     showToast('첨부 파일이 삭제되었습니다.');
+  };
+
+  const handleDeleteAllAttachments = async () => {
+    if (attachments.length === 0) return;
+    if (!window.confirm(`등록된 서류 ${attachments.length}건을 모두 삭제하시겠습니까?`)) return;
+    for (const att of attachments) {
+      await deleteAttachmentBlob(att.id);
+    }
+    setAttachments([]);
+    saveAttachmentsState([]);
+    showToast('모든 첨부 파일이 삭제되었습니다.');
   };
 
   const handleDownloadAttachment = async (attach: DocumentAttachment) => {
@@ -303,7 +315,7 @@ export const RowDocumentUploadModal: React.FC<RowDocumentUploadModalProps> = ({
             }`}
           >
             <UploadCloud className="w-4 h-4" />
-            <span>파일 업로드 및 보관함 ({attachments.length})</span>
+            <span>파일 업로드 및 삭제 관리 ({attachments.length})</span>
           </button>
           <button
             type="button"
@@ -419,6 +431,17 @@ export const RowDocumentUploadModal: React.FC<RowDocumentUploadModalProps> = ({
                       </button>
                     )}
                     {attachments.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={handleDeleteAllAttachments}
+                        className="px-2.5 py-1 text-[11px] font-bold bg-rose-50 hover:bg-rose-600 text-rose-700 hover:text-white border border-rose-200 hover:border-rose-600 rounded-lg flex items-center gap-1 transition-all cursor-pointer shadow-2xs"
+                        title="등록된 파일 전체 삭제"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                        <span>전체 삭제</span>
+                      </button>
+                    )}
+                    {attachments.length > 0 && (
                       <span className="text-[11px] text-emerald-700 font-semibold bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded">
                         ✓ 실사 대응 준비 완료
                       </span>
@@ -456,7 +479,7 @@ export const RowDocumentUploadModal: React.FC<RowDocumentUploadModalProps> = ({
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-1 shrink-0">
+                        <div className="flex items-center gap-1.5 shrink-0">
                           <button
                             type="button"
                             onClick={() => handleDownloadAttachment(file)}
@@ -469,10 +492,11 @@ export const RowDocumentUploadModal: React.FC<RowDocumentUploadModalProps> = ({
                           <button
                             type="button"
                             onClick={() => handleDeleteAttachment(file.id)}
-                            className="p-1 text-slate-400 hover:text-rose-600 transition-colors cursor-pointer"
+                            className="px-2 py-1 text-[11px] font-semibold bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded flex items-center gap-1 transition-colors cursor-pointer"
                             title="파일 삭제"
                           >
-                            <Trash2 className="w-3.5 h-3.5" />
+                            <Trash2 className="w-3 h-3" />
+                            <span>삭제</span>
                           </button>
                         </div>
                       </div>
