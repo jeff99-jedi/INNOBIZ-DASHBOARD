@@ -24,7 +24,8 @@ import {
   CheckCircle2,
   Loader2,
   FolderArchive,
-  Upload
+  Upload,
+  Sparkles
 } from 'lucide-react';
 
 interface ExportReportModalProps {
@@ -55,8 +56,8 @@ export const ExportReportModal: React.FC<ExportReportModalProps> = ({
     return {};
   });
 
-  // Active filter by Part & Search query
-  const [activePartFilter, setActivePartFilter] = useState<'all' | 'part1' | 'part2' | 'part3' | 'part4'>('all');
+  // Active filter by Part & Search query (includes 'common' for 8 standardized core docs)
+  const [activePartFilter, setActivePartFilter] = useState<'all' | 'common' | 'part1' | 'part2' | 'part3' | 'part4'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [downloadToast, setDownloadToast] = useState<string | null>(null);
@@ -287,8 +288,173 @@ ${item.optionalDocs && item.optionalDocs.length > 0 ? `\n### 4. 보조 및 가�
     }
   };
 
+  // Download Standardized 8 Auto-Generated Common Documents as Official Word (.doc)
+  const handleDownloadTemplateWord = async (tpl: GeneratedDocTemplate) => {
+    setDownloadingId(tpl.id);
+    try {
+      const base64Logo = company.logoUrl ? await convertImageUrlToBase64Png(company.logoUrl, 280, 95) : '';
+      const base64Seal = company.sealUrl ? await convertImageUrlToBase64Png(company.sealUrl, 90, 90) : '';
+      const formattedBodyHtml = convertMarkdownToRichHtml(tpl.content);
+
+      const steps = ['작성', '검토', '승인', '대표이사'];
+      const thStepsHtml = steps.map((s) => `<th style="border: 1pt solid #475569; background: #f1f5f9; padding: 3pt 5pt; font-size: 8.5pt; text-align: center; font-weight: bold;">${s}</th>`).join('');
+      const tdStepsHtml = steps.map((_, idx) => {
+        const isLast = idx === steps.length - 1;
+        return `<td style="border: 1pt solid #475569; height: 38pt; width: 46pt; text-align: center; vertical-align: middle; font-size: 8.5pt;">${
+          isLast && base64Seal 
+            ? `<img src="${base64Seal}" alt="직인" style="width: 32pt; height: 32pt; object-fit: contain; vertical-align: middle; display: inline-block;" />`
+            : isLast 
+            ? '(인)' 
+            : ''
+        }</td>`;
+      }).join('');
+
+      const wordHtml = `
+      <html xmlns:o="urn:schemas-microsoft-com:office:office" 
+            xmlns:w="urn:schemas-microsoft-com:office:word" 
+            xmlns="http://www.w3.org/TR/REC-html40">
+      <head>
+        <meta charset="utf-8">
+        <title>${tpl.title}</title>
+        <!--[if gte mso 9]>
+        <xml>
+          <w:WordDocument>
+            <w:View>Print</w:View>
+            <w:Zoom>100</w:Zoom>
+            <w:DoNotOptimizeForBrowser/>
+          </w:WordDocument>
+        </xml>
+        <![endif]-->
+        <style>
+          @page {
+            size: 21.0cm 29.7cm;
+            margin: 20mm 15mm 20mm 15mm;
+            mso-page-orientation: portrait;
+          }
+          body {
+            width: 100% !important;
+            max-width: 100% !important;
+            font-family: "Malgun Gothic", "맑은 고딕", "Dotum", "돋움", sans-serif;
+            font-size: 10.5pt;
+            line-height: 1.6;
+            color: #0f172a;
+            margin: 0;
+            padding: 0;
+          }
+          table {
+            width: 100% !important;
+            max-width: 100% !important;
+            table-layout: fixed !important;
+            border-collapse: collapse !important;
+            box-sizing: border-box !important;
+          }
+          th, td {
+            word-break: break-all !important;
+            word-wrap: break-word !important;
+            overflow-wrap: break-word !important;
+            white-space: normal !important;
+          }
+          h1 { font-size: 16pt; font-weight: bold; border-bottom: 2pt solid #0f172a; padding-bottom: 5pt; margin-top: 10pt; color: #0f172a; }
+          h3 { font-size: 12pt; font-weight: bold; margin-top: 14pt; margin-bottom: 4pt; color: #1e3a8a; border-left: 3pt solid #2563eb; padding-left: 6pt; }
+          h4 { font-size: 10.5pt; font-weight: bold; margin-top: 8pt; margin-bottom: 3pt; color: #334155; }
+          table.data-table {
+            width: 100% !important;
+            table-layout: fixed !important;
+            border-collapse: collapse !important;
+            margin: 10pt 0;
+            font-size: 9pt;
+          }
+          table.data-table th, table.data-table td {
+            border: 1pt solid #94a3b8;
+            padding: 4pt 5pt;
+          }
+          table.data-table th {
+            background-color: #f1f5f9;
+            font-weight: bold;
+            text-align: center;
+            color: #1e293b;
+          }
+        </style>
+      </head>
+      <body>
+        <table style="width: 100% !important; border: none !important; border-collapse: collapse !important; margin-bottom: 12pt;">
+          <tr>
+            <td style="width: 55%; border: none !important; vertical-align: top; text-align: left; padding: 0;">
+              ${
+                base64Logo
+                  ? `<div style="margin-bottom: 5pt;"><img src="${base64Logo}" alt="${company.companyName} Logo" style="max-height: 48pt; max-width: 175pt; object-fit: contain; display: block;" /></div>`
+                  : `<div style="font-size: 16pt; font-weight: bold; color: #1e3a8a; margin-bottom: 4pt;">${company.companyName}</div>`
+              }
+              <div style="font-size: 9pt; color: #475569; font-weight: bold;">문서번호: ${tpl.docCode}</div>
+              <div style="font-size: 8.5pt; color: #64748b;">서식규격: A4 (297㎜ × 210㎜) | 사내 표준 규정집</div>
+            </td>
+            <td style="width: 45%; border: none !important; vertical-align: top; text-align: right; padding: 0;">
+              <table align="right" style="margin-left: auto; margin-right: 0; width: 175pt !important; border-collapse: collapse !important; text-align: center; font-size: 8.5pt;">
+                <tr>
+                  <th rowspan="2" style="border: 1pt solid #475569; width: 18pt; font-size: 8.5pt; background: #f1f5f9; text-align: center; vertical-align: middle; font-weight: bold; padding: 2pt;">결<br/>재</th>
+                  ${thStepsHtml}
+                </tr>
+                <tr>
+                  ${tdStepsHtml}
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+        <div style="clear: both;"></div>
+
+        <div style="width: 100% !important;">
+          ${formattedBodyHtml}
+        </div>
+
+        <div style="margin-top: 28pt; padding-top: 14pt; border-top: 1.5pt solid #cbd5e1; text-align: right; font-size: 12pt; font-weight: bold; line-height: 2;">
+          ${company.companyName} &nbsp; 대표이사 &nbsp; ${company.ceoName}
+          ${
+            base64Seal
+              ? `&nbsp; <img src="${base64Seal}" alt="직인" style="width: 44pt; height: 44pt; vertical-align: middle; display: inline-block; margin-left: 6pt;" />`
+              : `&nbsp; <span style="font-size: 10pt; color: #b91c1c; font-weight: bold; margin-left: 4pt;">(직인생략)</span>`
+          }
+        </div>
+      </body>
+      </html>
+    `;
+
+      const blob = new Blob(['\ufeff', wordHtml], { type: 'application/msword;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `[${company.companyName}]_${tpl.docCode}_${tpl.title.replace(/[\/\\:*?"<>|]/g, '_')}.doc`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      showToast(`'${tpl.title}' 공식 워드(.doc) 서류를 다운로드했습니다.`);
+    } catch (e) {
+      showToast('문서 생성 중 오류가 발생했습니다.');
+    } finally {
+      setDownloadingId(null);
+    }
+  };
+
+  // Filtered Common Documents (8 items)
+  const filteredCommonDocs = useMemo(() => {
+    const q = searchQuery.toLowerCase().trim();
+    if (!q) return generatedTemplates;
+    return generatedTemplates.filter(
+      (tpl) =>
+        tpl.title.toLowerCase().includes(q) ||
+        tpl.docCode.toLowerCase().includes(q) ||
+        tpl.category.toLowerCase().includes(q) ||
+        tpl.targetEvalItem.toLowerCase().includes(q) ||
+        tpl.summary.toLowerCase().includes(q)
+    );
+  }, [generatedTemplates, searchQuery]);
+
   // Filter items by Part and Search term
   const filteredParts = useMemo(() => {
+    if (activePartFilter === 'common') {
+      return [];
+    }
     return SELF_AUDIT_PARTS.filter((part) => {
       if (activePartFilter !== 'all' && part.partId !== activePartFilter) {
         return false;
@@ -391,6 +557,26 @@ ${item.optionalDocs && item.optionalDocs.length > 0 ? `\n### 4. 보조 및 가�
             >
               전체 파트 ({SELF_AUDIT_GUIDE_ITEMS.length})
             </button>
+
+            {/* NEW: 기본공통서류 (8종) 전용 탭 */}
+            <button
+              type="button"
+              onClick={() => setActivePartFilter('common')}
+              className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+                activePartFilter === 'common'
+                  ? 'bg-indigo-600 text-white shadow-2xs'
+                  : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200/80'
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+              <span>기본공통서류</span>
+              <span className={`text-[11px] px-1.5 py-0.2 rounded-full font-bold ${
+                activePartFilter === 'common' ? 'bg-indigo-800 text-white' : 'bg-indigo-200 text-indigo-900'
+              }`}>
+                {filteredCommonDocs.length}종
+              </span>
+            </button>
+
             {SELF_AUDIT_PARTS.map((p) => {
               const count = itemsByPart.get(p.partId)?.length || 0;
               const isActive = activePartFilter === p.partId;
@@ -426,8 +612,128 @@ ${item.optionalDocs && item.optionalDocs.length > 0 ? `\n### 4. 보조 및 가�
           </div>
         </div>
 
-        {/* Content Table by Part */}
+        {/* Content Table by Part & Common Documents */}
         <div className="flex-1 overflow-y-auto py-3 space-y-6">
+          {/* =========================================================================
+              COMMON DOCUMENTS SECTION (8 Auto-Generated Documents with Download-only buttons)
+             ========================================================================= */}
+          {(activePartFilter === 'common' || (activePartFilter === 'all' && filteredCommonDocs.length > 0)) && (
+            <div className="border-2 border-indigo-200/80 rounded-xl overflow-hidden bg-white shadow-2xs">
+              {/* Common Section Header */}
+              <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-indigo-900 px-4 py-3.5 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-indigo-950">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-indigo-500/20 border border-indigo-400/40 flex items-center justify-center text-amber-300">
+                    <Sparkles className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="bg-amber-400 text-slate-950 text-[10.5px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider">
+                        즉시 출력 가능
+                      </span>
+                      <span className="text-xs text-indigo-200 font-medium">
+                        이노비즈 실무 서류 자동 생성기 ({filteredCommonDocs.length}종)
+                      </span>
+                    </div>
+                    <h3 className="text-sm sm:text-base font-bold text-white tracking-tight mt-0.5">
+                      기본 공통 서류 (사내 표준 규정집 및 핵심 보고서)
+                    </h3>
+                  </div>
+                </div>
+                <div className="text-xs text-indigo-200 flex items-center gap-2">
+                  <span className="bg-white/10 px-2 py-1 rounded text-[11px] font-medium border border-white/10">
+                    {company.companyName} 맞춤형 표준 서식
+                  </span>
+                  <span className="hidden md:inline text-[11px] text-indigo-300">
+                    사내 결재선 · 직인 · A4 규격 자동 탑재
+                  </span>
+                </div>
+              </div>
+
+              {/* Common Documents Table */}
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs border-collapse min-w-[780px]">
+                  <thead>
+                    <tr className="bg-indigo-50/70 text-indigo-950 font-bold border-b border-indigo-100">
+                      <th className="py-2.5 px-3 w-12 text-center whitespace-nowrap">No</th>
+                      <th className="py-2.5 px-3 w-44 text-center whitespace-nowrap">구분 / 문서코드</th>
+                      <th className="py-2.5 px-3 w-72 whitespace-nowrap">서류명 (공식 규정 및 보고서)</th>
+                      <th className="py-2.5 px-3 whitespace-nowrap">연계 평가지표 및 세부 설명</th>
+                      <th className="py-2.5 px-3 w-32 min-w-[110px] text-center whitespace-nowrap">다운로드</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-200 bg-white">
+                    {filteredCommonDocs.map((tpl, idx) => (
+                      <tr key={tpl.id} className="hover:bg-indigo-50/30 transition-colors">
+                        <td className="py-3 px-3 text-center text-slate-500 font-medium">
+                          {idx + 1}
+                        </td>
+                        <td className="py-3 px-3 text-center">
+                          <div className="flex flex-col items-center gap-1">
+                            <span className="text-[10px] font-semibold text-indigo-700 bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 rounded whitespace-nowrap">
+                              {tpl.category}
+                            </span>
+                            <span className="text-[10px] font-mono text-slate-500 bg-slate-100 px-1.5 py-0.2 rounded border border-slate-200 whitespace-nowrap">
+                              {tpl.docCode}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="py-3 px-3">
+                          <div className="font-bold text-slate-900 text-xs sm:text-[13px] leading-snug">
+                            {tpl.title}
+                          </div>
+                          <div className="text-[10.5px] text-slate-500 mt-1 flex items-center gap-1.5 flex-wrap">
+                            <span className="bg-slate-100 text-slate-600 px-1.5 py-0.2 rounded text-[10px] border border-slate-200">
+                              A4 표준 규정
+                            </span>
+                            <span className="text-slate-400">·</span>
+                            <span className="text-slate-600">워드(.doc) 양식</span>
+                            <span className="text-slate-400">·</span>
+                            <span className="text-emerald-600 font-medium">기업정보 자동반영</span>
+                          </div>
+                        </td>
+                        <td className="py-3 px-3">
+                          <div className="text-xs font-semibold text-blue-700 bg-blue-50/70 border border-blue-100 px-2 py-0.5 rounded inline-block mb-1">
+                            🎯 {tpl.targetEvalItem}
+                          </div>
+                          <p className="text-xs text-slate-600 leading-relaxed line-clamp-2">
+                            {tpl.summary}
+                          </p>
+                        </td>
+                        <td className="py-3 px-3 text-center">
+                          <button
+                            type="button"
+                            onClick={() => handleDownloadTemplateWord(tpl)}
+                            disabled={downloadingId === tpl.id}
+                            className="w-full max-w-[105px] px-3 py-1.5 text-xs font-bold bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white rounded-lg inline-flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs hover:shadow-xs disabled:opacity-50 whitespace-nowrap"
+                            title={`${tpl.title} 공식 워드(.doc) 서식 다운로드`}
+                          >
+                            {downloadingId === tpl.id ? (
+                              <>
+                                <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0" />
+                                <span>생성중...</span>
+                              </>
+                            ) : (
+                              <>
+                                <Download className="w-3.5 h-3.5 shrink-0" />
+                                <span>다운로드</span>
+                              </>
+                            )}
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                    {filteredCommonDocs.length === 0 && (
+                      <tr>
+                        <td colSpan={5} className="py-8 text-center text-slate-500 text-xs">
+                          검색어에 일치하는 기본 공통 서류가 없습니다.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
           {filteredParts.map((part) => {
             const items = itemsByPart.get(part.partId) || [];
             if (items.length === 0) return null;
