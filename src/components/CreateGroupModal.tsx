@@ -26,8 +26,6 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
     '회사 소개서 및 주요 사업 포트폴리오'
   ]);
 
-  if (!isOpen) return null;
-
   const categoryNames: Record<InnoBizCategory, string> = {
     tech_innovation: '기술혁신능력',
     tech_commercialize: '기술사업화능력',
@@ -91,6 +89,8 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
     setDescription('');
     setManager('');
   };
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs overflow-y-auto">

@@ -49,8 +49,6 @@ export const InnoBizApplicationModal: React.FC<InnoBizApplicationModalProps> = (
     }
   }, [isOpen]);
 
-  if (!isOpen) return null;
-
   // --- Factory Handlers ---
   const handleAddFactory = () => {
     if (formData.factories.length >= 3) {
@@ -217,6 +215,8 @@ export const InnoBizApplicationModal: React.FC<InnoBizApplicationModalProps> = (
       setTimeout(() => setSaveSuccessMsg(null), 2500);
     }
   };
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-900/60 backdrop-blur-xs overflow-y-auto animate-fadeIn">

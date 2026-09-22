@@ -157,8 +157,6 @@ export const AutoDocGeneratorModal: React.FC<AutoDocGeneratorModalProps> = ({
   const [editedContents, setEditedContents] = useState<{ [id: string]: string }>({});
   const [approvalPresetId, setApprovalPresetId] = useState<string>('3step_standard');
 
-  if (!isOpen) return null;
-
   const currentDoc = generatedDocs.find((d) => d.id === selectedDocId) || generatedDocs[0];
   const activeContent = editedContents[currentDoc.id] ?? currentDoc.content;
   const currentApprovalPreset = APPROVAL_PRESETS.find((p) => p.id === approvalPresetId) || APPROVAL_PRESETS[0];
@@ -472,6 +470,8 @@ export const AutoDocGeneratorModal: React.FC<AutoDocGeneratorModalProps> = ({
   const handleContentChange = (val: string) => {
     setEditedContents((prev) => ({ ...prev, [currentDoc.id]: val }));
   };
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs overflow-y-auto animate-fadeIn">

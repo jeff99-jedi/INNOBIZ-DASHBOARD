@@ -37,8 +37,6 @@ export const CompanyProfileModal: React.FC<CompanyProfileModalProps> = ({
   const logoInputRef = useRef<HTMLInputElement>(null);
   const sealInputRef = useRef<HTMLInputElement>(null);
 
-  if (!isOpen) return null;
-
   const handleChange = (field: keyof CompanyProfile, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
@@ -82,6 +80,8 @@ export const CompanyProfileModal: React.FC<CompanyProfileModalProps> = ({
       onClose();
     }, 800);
   };
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs overflow-y-auto animate-fadeIn">

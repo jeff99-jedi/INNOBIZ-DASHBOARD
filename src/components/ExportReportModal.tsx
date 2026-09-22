@@ -43,8 +43,6 @@ export const ExportReportModal: React.FC<ExportReportModalProps> = ({
   groups,
   company,
 }) => {
-  if (!isOpen) return null;
-
   // Selected options state (scores & grades)
   const [selectedOptions, setSelectedOptions] = useState<Record<string, number>>(() => {
     try {
@@ -488,6 +486,8 @@ ${item.optionalDocs && item.optionalDocs.length > 0 ? `\n### 4. 보조 및 가�
 
     return map;
   }, [searchQuery]);
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-slate-900/60 backdrop-blur-xs overflow-y-auto">

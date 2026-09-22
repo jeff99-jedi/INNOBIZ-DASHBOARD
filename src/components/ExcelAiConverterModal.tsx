@@ -63,8 +63,6 @@ export const ExcelAiConverterModal: React.FC<ExcelAiConverterModalProps> = ({
   const [activeTab, setActiveTab] = useState<'report' | 'gdocs' | 'raw'>('report');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  if (!isOpen) return null;
-
   const handleFileProcess = async (file: File) => {
     try {
       setIsParsing(true);
@@ -208,6 +206,8 @@ export const ExcelAiConverterModal: React.FC<ExcelAiConverterModalProps> = ({
     setIsInserted(false);
     setErrorMsg(null);
   };
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs overflow-y-auto animate-fadeIn">

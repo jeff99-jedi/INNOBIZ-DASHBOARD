@@ -31,8 +31,6 @@ export const AdminPasswordModal: React.FC<AdminPasswordModalProps> = ({
     }
   }, [isOpen]);
 
-  if (!isOpen) return null;
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (password === CORRECT_PASSWORD) {
@@ -61,6 +59,8 @@ export const AdminPasswordModal: React.FC<AdminPasswordModalProps> = ({
     setPassword((prev) => prev.slice(0, -1));
     setError(false);
   };
+
+  if (!isOpen) return null;
 
   return (
     <div

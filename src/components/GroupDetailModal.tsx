@@ -56,18 +56,17 @@ export const GroupDetailModal: React.FC<GroupDetailModalProps> = ({
   const [downloadToast, setDownloadToast] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  if (!isOpen || !group) return null;
-
-  const total = group.documents.length;
-  const completedCount = group.documents.filter((d) => d.status === 'completed').length;
+  const total = group ? group.documents.length : 0;
+  const completedCount = group ? group.documents.filter((d) => d.status === 'completed').length : 0;
   const progressPercent = total > 0 ? Math.round((completedCount / total) * 100) : 0;
 
-  const filteredDocs = group.documents.filter((doc) => {
+  const filteredDocs = group ? group.documents.filter((doc) => {
     if (activeTab === 'all') return true;
     return doc.status === activeTab;
-  });
+  }) : [];
 
   const handleStatusChange = (docId: string, newStatus: DocumentStatus) => {
+    if (!group) return;
     const updatedDocs = group.documents.map((doc) => {
       if (doc.id === docId) {
         return {
@@ -265,6 +264,8 @@ export const GroupDetailModal: React.FC<GroupDetailModalProps> = ({
     if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
     return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
   };
+
+  if (!isOpen || !group) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-slate-900/60 backdrop-blur-xs overflow-y-auto">

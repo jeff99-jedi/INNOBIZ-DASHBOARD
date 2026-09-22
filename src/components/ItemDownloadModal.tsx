@@ -57,8 +57,6 @@ export const ItemDownloadModal: React.FC<ItemDownloadModalProps> = ({
   const [isDownloadingAll, setIsDownloadingAll] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  if (!isOpen || !item) return null;
-
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => {
@@ -360,6 +358,8 @@ ${item.optionalDocs && item.optionalDocs.length > 0 ? `\n### 4. 보조 및 가�
     setIsDownloadingAll(false);
     showToast('모든 파일의 다운로드가 완료되었습니다.');
   };
+
+  if (!isOpen || !item) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150">

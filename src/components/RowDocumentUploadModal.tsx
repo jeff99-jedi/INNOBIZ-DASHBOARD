@@ -87,9 +87,7 @@ export const RowDocumentUploadModal: React.FC<RowDocumentUploadModalProps> = ({
     }
   }, [isOpen, row, matchedDoc]);
 
-  if (!isOpen || !row) return null;
-
-  const evidenceList = parseEvidenceDocs(row.evidenceDocs);
+  const evidenceList = row ? parseEvidenceDocs(row.evidenceDocs) : [];
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -252,6 +250,8 @@ export const RowDocumentUploadModal: React.FC<RowDocumentUploadModalProps> = ({
     setTimeout(() => setShowConfigSaved(false), 3000);
     showToast('Supabase 연동 정보가 안전하게 저장되었습니다.');
   };
+
+  if (!isOpen || !row) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150">

@@ -37,8 +37,6 @@ export const SupabaseSyncModal: React.FC<SupabaseSyncModalProps> = ({
   company,
   groups,
 }) => {
-  if (!isOpen) return null;
-
   const [supabaseUrlInput, setSupabaseUrlInput] = useState('');
   const [supabaseKeyInput, setSupabaseKeyInput] = useState('');
   const [statusMsg, setStatusMsg] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
@@ -166,6 +164,8 @@ export const SupabaseSyncModal: React.FC<SupabaseSyncModalProps> = ({
       setIsSyncing(false);
     }
   };
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-slate-900/60 backdrop-blur-xs overflow-y-auto">
