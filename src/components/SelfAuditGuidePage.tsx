@@ -963,10 +963,22 @@ export const SelfAuditGuidePage: React.FC<SelfAuditGuidePageProps> = ({
                             </span>
                           </h3>
 
-                          {/* Question snippet */}
-                          <p className="text-xs sm:text-sm text-slate-600 mt-1 leading-relaxed">
-                            {item.question}
-                          </p>
+                          {/* Question Overview (질문 개요) Box */}
+                          <div className="mt-2 p-3 rounded-xl bg-slate-50 border border-slate-200/90 text-xs text-slate-700 space-y-1.5">
+                            <div className="flex items-center gap-1.5 text-blue-700 font-bold">
+                              <HelpCircle className="w-3.5 h-3.5 shrink-0" />
+                              <span className="text-[11px] uppercase tracking-wide">질문 개요 및 평가 목적</span>
+                            </div>
+                            <p className="font-medium text-slate-800 leading-relaxed">
+                              {item.question}
+                            </p>
+                            {item.portalDescription && (
+                              <p className="text-[11px] text-slate-500 pt-1 border-t border-slate-200/60 leading-normal flex items-start gap-1">
+                                <span className="font-semibold text-slate-600 shrink-0">📌 심사 개요:</span>
+                                <span>{item.portalDescription}</span>
+                              </p>
+                            )}
+                          </div>
                         </div>
                       </div>
 
@@ -1340,6 +1352,14 @@ export const SelfAuditGuidePage: React.FC<SelfAuditGuidePageProps> = ({
             <div className="flex items-center justify-between mt-1.5 text-xs text-slate-400">
               <span className="truncate">{activeItem.majorCategory}</span>
               <span className="font-semibold text-amber-600 shrink-0">배점 {activeItem.points}점</span>
+            </div>
+
+            {/* Question Overview for Active Item */}
+            <div className="mt-2.5 pt-2.5 border-t border-slate-100 text-xs text-slate-600 space-y-1">
+              <span className="font-bold text-blue-700 text-[11px] block">질문 개요</span>
+              <p className="line-clamp-3 leading-relaxed text-slate-700">
+                {activeItem.question}
+              </p>
             </div>
           </div>
 
