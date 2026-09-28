@@ -25,8 +25,10 @@ import {
   Loader2,
   FolderArchive,
   Upload,
-  Sparkles
+  Sparkles,
+  FileSpreadsheet
 } from 'lucide-react';
+import { downloadSelfAuditExcelFile } from '../utils/selfAuditExcelExport';
 
 interface ExportReportModalProps {
   isOpen: boolean;
@@ -513,8 +515,25 @@ ${item.optionalDocs && item.optionalDocs.length > 0 ? `\n### 4. 보조 및 가�
             </div>
           </div>
 
-          {/* Right Action: Close button */}
+          {/* Right Action: Close & Excel Download buttons */}
           <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                try {
+                  downloadSelfAuditExcelFile(company);
+                  showToast('62개 항목별 필요서류 & 공통서류 엑셀 파일을 다운로드했습니다.');
+                } catch (e) {
+                  showToast('엑셀 생성 중 오류가 발생했습니다.');
+                }
+              }}
+              className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5 shadow-2xs"
+              title="자가진단 62개 항목별 필요서류 & 이노비즈 공통서류 엑셀(.xlsx) 다운로드"
+            >
+              <FileSpreadsheet className="w-4 h-4 text-emerald-200" />
+              <span className="hidden sm:inline">서류목록 엑셀(.xlsx)</span>
+              <span className="sm:hidden">엑셀</span>
+            </button>
             <button
               type="button"
               onClick={onClose}

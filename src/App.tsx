@@ -24,7 +24,7 @@ import { SelfAuditGuidePage } from './components/SelfAuditGuidePage';
 import { AuditStatisticsPage } from './components/AuditStatisticsPage';
 import { PortalSelectionPage } from './components/PortalSelectionPage';
 import { SelfAuditTextPages } from './components/SelfAuditTextPages';
-import { downloadAll62ItemsAsZip } from './utils/selfAuditTextExport';
+import { downloadAll62ItemsAsZip, downloadSelfAuditExcelFile } from './utils/selfAuditTextExport';
 import { 
   FolderPlus, 
   Search, 
@@ -91,6 +91,7 @@ export default function App() {
   const [textPagesInitialItemId, setTextPagesInitialItemId] = useState<string | undefined>(undefined);
   const [isZippingAll62, setIsZippingAll62] = useState(false);
   const [zipProgress, setZipProgress] = useState<{ current: number; total: number } | null>(null);
+  const [isDownloadingExcel, setIsDownloadingExcel] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<InnoBizCategory | 'all'>('all');
   const [activeDetailGroup, setActiveDetailGroup] = useState<DocumentGroup | null>(null);
@@ -447,6 +448,37 @@ export default function App() {
                     <>
                       <FolderDown className="w-4 h-4 text-yellow-200 shrink-0" />
                       <span className="truncate">📥 62개 항목(필요서류 포함) 일괄 다운로드(.zip)</span>
+                    </>
+                  )}
+                </button>
+
+                {/* 62개 항목별 필요서류 & 공통서류 총괄 엑셀(.xlsx) 원클릭 다운로드 버튼 */}
+                <button
+                  type="button"
+                  disabled={isDownloadingExcel}
+                  onClick={() => {
+                    try {
+                      setIsDownloadingExcel(true);
+                      downloadSelfAuditExcelFile(company);
+                    } catch (err) {
+                      console.error('Download excel error:', err);
+                      alert('엑셀 파일 생성 중 오류가 발생했습니다.');
+                    } finally {
+                      setTimeout(() => setIsDownloadingExcel(false), 800);
+                    }
+                  }}
+                  className="px-3.5 py-2.5 bg-gradient-to-r from-emerald-600 via-teal-600 to-green-700 hover:from-emerald-700 hover:to-teal-800 text-white text-xs sm:text-sm font-black rounded-xl shadow-xs transition-all flex items-center gap-2 cursor-pointer ring-1 ring-emerald-300/50 hover:scale-[1.01]"
+                  title="자가진단 62개 항목별 필요서류 및 이노비즈 공통구비서류 32종 4개 시트 엑셀(.xlsx) 다운로드"
+                >
+                  {isDownloadingExcel ? (
+                    <>
+                      <Loader2 className="w-4 h-4 text-white animate-spin shrink-0" />
+                      <span className="truncate">엑셀 생성 중...</span>
+                    </>
+                  ) : (
+                    <>
+                      <FileSpreadsheet className="w-4 h-4 text-emerald-200 shrink-0" />
+                      <span className="truncate">📊 항목별 필요서류·공통서류 엑셀(.xlsx)</span>
                     </>
                   )}
                 </button>

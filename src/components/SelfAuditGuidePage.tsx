@@ -37,12 +37,14 @@ import {
   Download,
   Paperclip,
   FolderDown,
+  FileSpreadsheet
 } from 'lucide-react';
 import { CompanyProfile, DocumentAttachment, DocumentGroup, SelfAuditGuideItem, SelfAuditOption } from '../types';
 import { SELF_AUDIT_PARTS, SELF_AUDIT_GUIDE_ITEMS } from '../data/selfAuditGuideData';
 import { generateDocumentsForCompany, GeneratedDocTemplate } from '../data/generatedDocTemplates';
 import { ItemDownloadModal } from './ItemDownloadModal';
 import { getSavedAttachmentsForItem } from '../utils/fileStorage';
+import { downloadSelfAuditExcelFile } from '../utils/selfAuditExcelExport';
 
 interface SelfAuditGuidePageProps {
   company: CompanyProfile;
@@ -858,6 +860,23 @@ export const SelfAuditGuidePage: React.FC<SelfAuditGuidePageProps> = ({
                         <span>전체 자료실</span>
                       </button>
                     )}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        try {
+                          downloadSelfAuditExcelFile(company);
+                          setToastMessage('자가진단 62개 항목별 필요서류 & 공통서류 엑셀 파일을 다운로드했습니다.');
+                          setTimeout(() => setToastMessage(null), 3000);
+                        } catch (e) {
+                          alert('엑셀 다운로드 중 오류가 발생했습니다.');
+                        }
+                      }}
+                      className="px-2.5 py-1 text-xs text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 rounded-lg transition-colors font-bold flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                      title="자가진단 62개 항목별 필요서류 & 이노비즈 공통서류 엑셀(.xlsx) 다운로드"
+                    >
+                      <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>필요서류 엑셀(.xlsx)</span>
+                    </button>
                     <button
                       type="button"
                       onClick={handleExpandAll}

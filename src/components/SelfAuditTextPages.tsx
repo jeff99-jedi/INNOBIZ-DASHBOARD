@@ -14,14 +14,16 @@ import {
   Layers,
   FolderDown,
   Loader2,
-  FileCheck
+  FileCheck,
+  FileSpreadsheet
 } from 'lucide-react';
 import { CompanyProfile, SelfAuditGuideItem } from '../types';
 import { SELF_AUDIT_GUIDE_ITEMS } from '../data/selfAuditGuideData';
 import {
   formatSingleItemText,
   triggerTextDownload,
-  downloadAll62ItemsAsZip
+  downloadAll62ItemsAsZip,
+  downloadSelfAuditExcelFile
 } from '../utils/selfAuditTextExport';
 
 interface SelfAuditTextPagesProps {
@@ -56,6 +58,7 @@ export const SelfAuditTextPages: React.FC<SelfAuditTextPagesProps> = ({
   const [copied, setCopied] = useState(false);
   const [isZipping, setIsZipping] = useState(false);
   const [zipProgress, setZipProgress] = useState<{ current: number; total: number } | null>(null);
+  const [isDownloadingExcel, setIsDownloadingExcel] = useState(false);
 
   const currentItem = items[currentPageIndex] || items[0];
 
@@ -113,6 +116,19 @@ export const SelfAuditTextPages: React.FC<SelfAuditTextPagesProps> = ({
     } finally {
       setIsZipping(false);
       setZipProgress(null);
+    }
+  };
+
+  // Download complete Excel spreadsheet with all 62 items required docs + common docs
+  const handleDownloadExcel = () => {
+    try {
+      setIsDownloadingExcel(true);
+      downloadSelfAuditExcelFile(company);
+    } catch (err) {
+      console.error('Excel download error:', err);
+      alert('엑셀 파일 생성 중 오류가 발생했습니다.');
+    } finally {
+      setTimeout(() => setIsDownloadingExcel(false), 800);
     }
   };
 
@@ -193,6 +209,27 @@ export const SelfAuditTextPages: React.FC<SelfAuditTextPagesProps> = ({
               <Download className="w-3.5 h-3.5 text-blue-600" />
               <span className="hidden sm:inline">현재 페이지 저장(.txt)</span>
               <span className="sm:hidden">TXT</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleDownloadExcel}
+              disabled={isDownloadingExcel}
+              className="px-3 py-1.5 rounded-xl border border-emerald-300 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-2xs transition-colors"
+              title="자가진단 62개 항목별 필요서류 및 이노비즈 공통서류 엑셀(.xlsx) 다운로드"
+            >
+              {isDownloadingExcel ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 text-emerald-700 animate-spin" />
+                  <span>엑셀 생성 중...</span>
+                </>
+              ) : (
+                <>
+                  <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
+                  <span className="hidden sm:inline">서류목록 엑셀(.xlsx)</span>
+                  <span className="sm:hidden">엑셀</span>
+                </>
+              )}
             </button>
 
             <button

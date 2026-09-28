@@ -1,6 +1,9 @@
 import JSZip from 'jszip';
 import { CompanyProfile, SelfAuditGuideItem } from '../types';
 import { SELF_AUDIT_GUIDE_ITEMS } from '../data/selfAuditGuideData';
+import { generateSelfAuditExcelBlob, downloadSelfAuditExcelFile } from './selfAuditExcelExport';
+
+export { downloadSelfAuditExcelFile, generateSelfAuditExcelBlob };
 
 /**
  * Generates a clean text document representation of a single SelfAuditGuideItem
@@ -221,6 +224,15 @@ export async function downloadAll62ItemsAsZip(
 
   zip.file('00_이노비즈_자가진단_62개항목_전체통합본.txt', '\uFEFF' + masterTitle);
 
+  // Also include the Excel Spreadsheet (.xlsx) with 62 items required docs + common docs
+  try {
+    const excelBlob = generateSelfAuditExcelBlob(company);
+    const excelArrayBuffer = await excelBlob.arrayBuffer();
+    zip.file('00_이노비즈_자가진단_항목별_필요서류_및_공통서류_목록.xlsx', excelArrayBuffer);
+  } catch (excelErr) {
+    console.warn('Failed to embed Excel file in zip:', excelErr);
+  }
+
   // Readme/Index file
   const indexLines: string[] = [
     '==============================================================================',
@@ -230,13 +242,15 @@ export async function downloadAll62ItemsAsZip(
     `발행일시: ${new Date().toLocaleString('ko-KR')}`,
     `총 문항수: 62문항 (1,000점 만점)`,
     `※ 중요: 모든 개별 파일 상단 [질문 개요 및 평가 목적] 바로 앞에 [★ 필요서류 목록]이 명시되어 있어 실사 준비 서류를 즉시 대조 점검할 수 있습니다.`,
+    `※ 엑셀파일 포함: [00_이노비즈_자가진단_항목별_필요서류_및_공통서류_목록.xlsx] 파일에 62개 전체 항목별 필요서류와 32종 공통서류가 4개 시트로 일목요연하게 정리되어 있습니다.`,
     '',
-    '[폴더 구성 안내]',
-    '1. 1_기술혁신능력_15문항 : R&D 투자현황, 연구인력, 연구조직 및 지식재산권 (300점)',
-    '2. 2_기술사업화능력_19문항 : 신제품기획, 개발공정, 품질관리, 판로 및 마케팅 (300점)',
-    '3. 3_기술혁신경영능력_15문항 : 대표자 리더십, 조직관리, 윤리/ESG, 재무투명성 (200점)',
-    '4. 4_기술혁신성과_13문항 : 기술 및 시장경쟁력, 매출성장성, 일자리 창출 (200점)',
-    '5. 00_이노비즈_자가진단_62개항목_전체통합본.txt : 62개 전체 항목 1권 통합본',
+    '[폴더 및 파일 구성 안내]',
+    '1. 00_이노비즈_자가진단_항목별_필요서류_및_공통서류_목록.xlsx : 항목별 필요서류 & 공통서류 총괄 엑셀',
+    '2. 00_이노비즈_자가진단_62개항목_전체통합본.txt : 62개 전체 항목 1권 통합본',
+    '3. 1_기술혁신능력_15문항 : R&D 투자현황, 연구인력, 연구조직 및 지식재산권 (300점)',
+    '4. 2_기술사업화능력_19문항 : 신제품기획, 개발공정, 품질관리, 판로 및 마케팅 (300점)',
+    '5. 3_기술혁신경영능력_15문항 : 대표자 리더십, 조직관리, 윤리/ESG, 재무투명성 (200점)',
+    '6. 4_기술혁신성과_13문항 : 기술 및 시장경쟁력, 매출성장성, 일자리 창출 (200점)',
     '',
     '[항목별 파일 목록 (총 62개)]',
     ...items.map((item, idx) => `${String(idx + 1).padStart(2, '0')}. [${item.evalItemCode}] ${item.evalItemName} (${item.points}점) - ${item.partName}`),
