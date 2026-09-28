@@ -53,6 +53,7 @@ interface SelfAuditGuidePageProps {
   onBackToPortal?: () => void;
   onOpenStats?: () => void;
   onOpenExportModal?: () => void;
+  onNavigateToTextPages?: (initialItemId?: string) => void;
 }
 
 const CHECK_STORAGE_KEY = 'innobiz_self_audit_checklist_v2';
@@ -163,6 +164,7 @@ export const SelfAuditGuidePage: React.FC<SelfAuditGuidePageProps> = ({
   onBackToPortal,
   onOpenStats,
   onOpenExportModal,
+  onNavigateToTextPages,
 }) => {
   const [selectedPartId, setSelectedPartId] = useState<'all' | 'part1' | 'part2' | 'part3' | 'part4'>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -834,6 +836,17 @@ export const SelfAuditGuidePage: React.FC<SelfAuditGuidePageProps> = ({
                   </div>
 
                   <div className="flex items-center gap-2">
+                    {onNavigateToTextPages && (
+                      <button
+                        type="button"
+                        onClick={() => onNavigateToTextPages()}
+                        className="px-2.5 py-1 text-xs text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-lg transition-colors font-bold flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                        title="62개 자가진단 항목 개별 텍스트 페이지 및 일괄 다운로드"
+                      >
+                        <FileText className="w-3.5 h-3.5 text-indigo-600" />
+                        <span>62개 텍스트 명세서</span>
+                      </button>
+                    )}
                     {onOpenExportModal && (
                       <button
                         type="button"
@@ -1273,6 +1286,18 @@ export const SelfAuditGuidePage: React.FC<SelfAuditGuidePageProps> = ({
                         </div>
 
                         <div className="flex items-center gap-2 flex-wrap">
+                          {onNavigateToTextPages && (
+                            <button
+                              type="button"
+                              onClick={() => onNavigateToTextPages(item.id)}
+                              className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 rounded-lg text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-2xs transition-all"
+                              title="해당 문항의 텍스트 전용 명세서 페이지로 이동"
+                            >
+                              <FileText className="w-3.5 h-3.5 text-slate-600" />
+                              <span>개별 텍스트 명세서</span>
+                            </button>
+                          )}
+
                           <button
                             type="button"
                             onClick={() => setDownloadModalItem(item)}

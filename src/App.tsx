@@ -23,6 +23,8 @@ import { SupabaseSyncModal } from './components/SupabaseSyncModal';
 import { SelfAuditGuidePage } from './components/SelfAuditGuidePage';
 import { AuditStatisticsPage } from './components/AuditStatisticsPage';
 import { PortalSelectionPage } from './components/PortalSelectionPage';
+import { SelfAuditTextPages } from './components/SelfAuditTextPages';
+import { downloadAll62ItemsAsZip } from './utils/selfAuditTextExport';
 import { 
   FolderPlus, 
   Search, 
@@ -39,7 +41,9 @@ import {
   Sparkles,
   FileText,
   BarChart3,
-  Database
+  Database,
+  FolderDown,
+  Loader2
 } from 'lucide-react';
 
 const STORAGE_KEY = 'innobiz_document_groups_v2_sheet';
@@ -83,7 +87,10 @@ export default function App() {
   });
 
   const [viewMode, setViewMode] = useState<'cards' | 'matrix'>('cards');
-  const [currentView, setCurrentView] = useState<'portal' | 'dashboard' | 'guide' | 'stats'>('portal');
+  const [currentView, setCurrentView] = useState<'portal' | 'dashboard' | 'guide' | 'stats' | 'textpages'>('portal');
+  const [textPagesInitialItemId, setTextPagesInitialItemId] = useState<string | undefined>(undefined);
+  const [isZippingAll62, setIsZippingAll62] = useState(false);
+  const [zipProgress, setZipProgress] = useState<{ current: number; total: number } | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<InnoBizCategory | 'all'>('all');
   const [activeDetailGroup, setActiveDetailGroup] = useState<DocumentGroup | null>(null);
@@ -254,7 +261,7 @@ export default function App() {
         onOpenSupabaseModal={() => setIsSupabaseModalOpen(true)}
       />
 
-      {/* Main Container / View Switching: Dashboard vs Guide vs Stats */}
+      {/* Main Container / View Switching: Dashboard vs Guide vs Stats vs TextPages */}
       {currentView === 'guide' ? (
         <SelfAuditGuidePage
           company={company}
@@ -268,6 +275,10 @@ export default function App() {
           onBackToPortal={() => setCurrentView('portal')}
           onOpenStats={() => setCurrentView('stats')}
           onOpenExportModal={() => setIsExportModalOpen(true)}
+          onNavigateToTextPages={(initialItemId) => {
+            setTextPagesInitialItemId(initialItemId);
+            setCurrentView('textpages');
+          }}
         />
       ) : currentView === 'stats' ? (
         <AuditStatisticsPage
@@ -280,6 +291,14 @@ export default function App() {
             setAutoDocInitialId(initialDocId);
             setIsAutoDocModalOpen(true);
           }}
+        />
+      ) : currentView === 'textpages' ? (
+        <SelfAuditTextPages
+          company={company}
+          initialItemId={textPagesInitialItemId}
+          onBackToGuide={() => setCurrentView('guide')}
+          onBackToDashboard={() => setCurrentView('dashboard')}
+          onBackToPortal={() => setCurrentView('portal')}
         />
       ) : (
         <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -380,6 +399,56 @@ export default function App() {
                 >
                   <FileCheck2 className="w-4 h-4 text-emerald-300 shrink-0" />
                   <span className="truncate">📋 실사 점검표 및 자료실</span>
+                </button>
+
+                {/* 62개 자가진단 항목 개별 텍스트 페이지 열기 & 일괄 다운로드 버튼 */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTextPagesInitialItemId(undefined);
+                    setCurrentView('textpages');
+                  }}
+                  className="px-3.5 py-2.5 bg-indigo-600/90 hover:bg-indigo-600 text-white text-xs sm:text-sm font-bold rounded-xl transition-all flex items-center gap-2 cursor-pointer ring-1 ring-indigo-400/40 hover:scale-[1.01]"
+                  title="62개 자가진단 항목 개별 텍스트 페이지 열람"
+                >
+                  <FileText className="w-4 h-4 text-amber-300 shrink-0" />
+                  <span className="truncate">📄 62개 항목 개별 텍스트 페이지</span>
+                </button>
+
+                <button
+                  type="button"
+                  disabled={isZippingAll62}
+                  onClick={async () => {
+                    try {
+                      setIsZippingAll62(true);
+                      setZipProgress({ current: 0, total: 62 });
+                      await downloadAll62ItemsAsZip(company, (curr, tot) => {
+                        setZipProgress({ current: curr, total: tot });
+                      });
+                    } catch (err) {
+                      console.error('Download all 62 zip error:', err);
+                      alert('자가진단 항목 일괄 다운로드 중 오류가 발생했습니다.');
+                    } finally {
+                      setIsZippingAll62(false);
+                      setZipProgress(null);
+                    }
+                  }}
+                  className="px-3.5 py-2.5 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 disabled:from-slate-600 disabled:to-slate-700 text-white text-xs sm:text-sm font-black rounded-xl shadow-xs transition-all flex items-center gap-2 cursor-pointer ring-1 ring-amber-300/40 hover:scale-[1.01]"
+                  title="자가진단 62개 항목 개별 파일 및 통합본 한번에 ZIP 일괄 다운로드"
+                >
+                  {isZippingAll62 ? (
+                    <>
+                      <Loader2 className="w-4 h-4 text-white animate-spin shrink-0" />
+                      <span className="truncate">
+                        압축 생성 중 ({zipProgress?.current || 0}/{zipProgress?.total || 62})
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <FolderDown className="w-4 h-4 text-yellow-200 shrink-0" />
+                      <span className="truncate">📥 62개 자가진단 항목 한번에 다운로드(.zip)</span>
+                    </>
+                  )}
                 </button>
 
                 <button

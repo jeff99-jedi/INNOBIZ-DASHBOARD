@@ -1,10 +1,10 @@
 import React from 'react';
-import { Plus, FolderDown, RotateCcw, Search, ShieldCheck, HelpCircle, Building2, Sparkles, FileSpreadsheet, BookOpen, Layers, BarChart3, Home, Database } from 'lucide-react';
+import { Plus, FolderDown, RotateCcw, Search, ShieldCheck, HelpCircle, Building2, Sparkles, FileSpreadsheet, BookOpen, Layers, BarChart3, Home, Database, FileText } from 'lucide-react';
 import { CompanyProfile } from '../types';
 
 interface HeaderProps {
-  currentView?: 'portal' | 'dashboard' | 'guide' | 'stats';
-  onViewChange?: (view: 'portal' | 'dashboard' | 'guide' | 'stats') => void;
+  currentView?: 'portal' | 'dashboard' | 'guide' | 'stats' | 'textpages';
+  onViewChange?: (view: 'portal' | 'dashboard' | 'guide' | 'stats' | 'textpages') => void;
   searchQuery: string;
   onSearchChange: (q: string) => void;
   onOpenCreateModal: () => void;
@@ -119,6 +119,19 @@ export const Header: React.FC<HeaderProps> = ({
                 <span className="px-1.5 py-0.5 text-xs bg-amber-400 text-slate-950 font-bold rounded-full">
                   NEW
                 </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => onViewChange('textpages')}
+                className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
+                  currentView === 'textpages'
+                    ? 'bg-blue-600 text-white shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+                title="62개 자가진단 항목 개별 텍스트 페이지 및 일괄 다운로드"
+              >
+                <FileText className="w-3.5 h-3.5 text-amber-500" />
+                <span>62개 텍스트 명세서</span>
               </button>
             </div>
           )}
