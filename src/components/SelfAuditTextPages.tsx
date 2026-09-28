@@ -296,7 +296,7 @@ export const SelfAuditTextPages: React.FC<SelfAuditTextPagesProps> = ({
                       <span className="truncate">{item.evalItemName}</span>
                     </div>
                     <span className="text-[10px] text-slate-400 truncate block">
-                      {item.majorCategory} · {item.points}점
+                      {item.majorCategory} · {item.points}점 · 서류 {item.requiredDocs.length}건
                     </span>
                   </div>
                 </button>
@@ -321,52 +321,99 @@ export const SelfAuditTextPages: React.FC<SelfAuditTextPagesProps> = ({
         {/* Right Main Content: Individual Text Document Reader (70% width) */}
         <main className="flex-1 min-w-0 flex flex-col space-y-3">
           {/* Top Pagination & Info Banner */}
-          <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div>
-              <div className="flex items-center gap-2 flex-wrap mb-1">
-                <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200">
-                  {currentItem.partName}
-                </span>
-                <span className="text-xs text-slate-400">|</span>
-                <span className="text-xs font-semibold text-slate-600">
-                  {currentItem.majorCategory}
-                </span>
-                <span className="text-xs font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
-                  배점: {currentItem.points}점
-                </span>
+          <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs flex flex-col space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <div className="flex items-center gap-2 flex-wrap mb-1">
+                  <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                    {currentItem.partName}
+                  </span>
+                  <span className="text-xs text-slate-400">|</span>
+                  <span className="text-xs font-semibold text-slate-600">
+                    {currentItem.majorCategory}
+                  </span>
+                  <span className="text-xs font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                    배점: {currentItem.points}점
+                  </span>
+                </div>
+                <h2 className="text-base sm:text-lg font-black text-slate-900 tracking-tight">
+                  [{currentItem.evalItemCode}] {currentItem.evalItemName}
+                </h2>
               </div>
-              <h2 className="text-base sm:text-lg font-black text-slate-900 tracking-tight">
-                [{currentItem.evalItemCode}] {currentItem.evalItemName}
-              </h2>
+
+              {/* Pagination Controls */}
+              <div className="flex items-center gap-1.5 self-end sm:self-center shrink-0">
+                <button
+                  type="button"
+                  onClick={handlePrevPage}
+                  disabled={currentPageIndex === 0}
+                  className="p-2 rounded-xl border border-slate-200 hover:bg-slate-50 disabled:opacity-30 disabled:hover:bg-transparent text-slate-700 transition-colors cursor-pointer"
+                  title="이전 페이지 (이전 항목)"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+
+                <div className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800">
+                  <span>{currentPageIndex + 1}</span>
+                  <span className="text-slate-400 mx-1">/</span>
+                  <span className="text-slate-500">{totalCount}</span>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleNextPage}
+                  disabled={currentPageIndex === totalCount - 1}
+                  className="p-2 rounded-xl border border-slate-200 hover:bg-slate-50 disabled:opacity-30 disabled:hover:bg-transparent text-slate-700 transition-colors cursor-pointer"
+                  title="다음 페이지 (다음 항목)"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
             </div>
 
-            {/* Pagination Controls */}
-            <div className="flex items-center gap-1.5 self-end sm:self-center shrink-0">
-              <button
-                type="button"
-                onClick={handlePrevPage}
-                disabled={currentPageIndex === 0}
-                className="p-2 rounded-xl border border-slate-200 hover:bg-slate-50 disabled:opacity-30 disabled:hover:bg-transparent text-slate-700 transition-colors cursor-pointer"
-                title="이전 페이지 (이전 항목)"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-
-              <div className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800">
-                <span>{currentPageIndex + 1}</span>
-                <span className="text-slate-400 mx-1">/</span>
-                <span className="text-slate-500">{totalCount}</span>
+            {/* ★ 필요서류 목록 (빠른 확인 배너) */}
+            <div className="pt-2.5 border-t border-slate-100 flex flex-col gap-1.5">
+              <div className="flex items-center gap-2">
+                <span className="text-amber-500 font-black text-sm">★</span>
+                <span className="text-xs font-bold text-slate-800">
+                  필요서류 목록
+                </span>
+                <span className="text-[11px] text-slate-500 font-medium">
+                  (필수 {currentItem.requiredDocs.length}건
+                  {currentItem.optionalDocs && currentItem.optionalDocs.length > 0
+                    ? ` / 보조·가점 ${currentItem.optionalDocs.length}건`
+                    : ''}
+                  )
+                </span>
               </div>
-
-              <button
-                type="button"
-                onClick={handleNextPage}
-                disabled={currentPageIndex === totalCount - 1}
-                className="p-2 rounded-xl border border-slate-200 hover:bg-slate-50 disabled:opacity-30 disabled:hover:bg-transparent text-slate-700 transition-colors cursor-pointer"
-                title="다음 페이지 (다음 항목)"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
+              <div className="flex flex-wrap gap-1.5">
+                {currentItem.requiredDocs.length > 0 ? (
+                  currentItem.requiredDocs.map((doc, idx) => (
+                    <span
+                      key={idx}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium bg-amber-50/80 text-amber-950 border border-amber-200 shadow-2xs"
+                    >
+                      <span className="text-[10px] font-bold text-amber-800 bg-amber-200/70 px-1 rounded">
+                        필수 {idx + 1}
+                      </span>
+                      <span>{doc}</span>
+                    </span>
+                  ))
+                ) : (
+                  <span className="text-xs text-slate-500">별도 제출 서류 없음 (현장 실사 인터뷰 확인)</span>
+                )}
+                {currentItem.optionalDocs?.map((doc, idx) => (
+                  <span
+                    key={`opt-${idx}`}
+                    className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200"
+                  >
+                    <span className="text-[10px] font-bold text-slate-500 bg-slate-200 px-1 rounded">
+                      보조 {idx + 1}
+                    </span>
+                    <span>{doc}</span>
+                  </span>
+                ))}
+              </div>
             </div>
           </div>
 

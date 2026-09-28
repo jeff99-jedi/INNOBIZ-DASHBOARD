@@ -409,10 +409,10 @@ export default function App() {
                     setCurrentView('textpages');
                   }}
                   className="px-3.5 py-2.5 bg-indigo-600/90 hover:bg-indigo-600 text-white text-xs sm:text-sm font-bold rounded-xl transition-all flex items-center gap-2 cursor-pointer ring-1 ring-indigo-400/40 hover:scale-[1.01]"
-                  title="62개 자가진단 항목 개별 텍스트 페이지 열람"
+                  title="62개 자가진단 항목 개별 텍스트 페이지 열람 (★ 필요서류 목록 포함)"
                 >
                   <FileText className="w-4 h-4 text-amber-300 shrink-0" />
-                  <span className="truncate">📄 62개 항목 개별 텍스트 페이지</span>
+                  <span className="truncate">📄 62개 항목 개별 텍스트 (필요서류 포함)</span>
                 </button>
 
                 <button
@@ -434,7 +434,7 @@ export default function App() {
                     }
                   }}
                   className="px-3.5 py-2.5 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 disabled:from-slate-600 disabled:to-slate-700 text-white text-xs sm:text-sm font-black rounded-xl shadow-xs transition-all flex items-center gap-2 cursor-pointer ring-1 ring-amber-300/40 hover:scale-[1.01]"
-                  title="자가진단 62개 항목 개별 파일 및 통합본 한번에 ZIP 일괄 다운로드"
+                  title="자가진단 62개 항목(★ 필요서류 목록 포함) 개별 파일 및 통합본 한번에 ZIP 일괄 다운로드"
                 >
                   {isZippingAll62 ? (
                     <>
@@ -446,7 +446,7 @@ export default function App() {
                   ) : (
                     <>
                       <FolderDown className="w-4 h-4 text-yellow-200 shrink-0" />
-                      <span className="truncate">📥 62개 자가진단 항목 한번에 다운로드(.zip)</span>
+                      <span className="truncate">📥 62개 항목(필요서류 포함) 일괄 다운로드(.zip)</span>
                     </>
                   )}
                 </button>

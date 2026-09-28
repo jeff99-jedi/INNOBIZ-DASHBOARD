@@ -28,6 +28,23 @@ export function formatSingleItemText(
   lines.push(subDivider);
   lines.push('');
 
+  // ★ 필요서류 목록 (1. [질문 개요 및 평가 목적] 바로 앞에 배치)
+  lines.push('★ 필요서류 목록');
+  if (item.requiredDocs && item.requiredDocs.length > 0) {
+    item.requiredDocs.forEach((doc, idx) => {
+      lines.push(`   - [필수 ${idx + 1}] ${doc}`);
+    });
+  } else {
+    lines.push('   - 별도 제출 증빙 없음 (현장 실사 인터뷰 및 현물 점검)');
+  }
+  if (item.optionalDocs && item.optionalDocs.length > 0) {
+    item.optionalDocs.forEach((doc, idx) => {
+      lines.push(`   - [보조 ${idx + 1}] ${doc}`);
+    });
+  }
+  lines.push(subDivider);
+  lines.push('');
+
   // 1. 질문 개요 및 평가 목적
   lines.push('1. [질문 개요 및 평가 목적]');
   lines.push(`   Q. ${item.question}`);
@@ -212,6 +229,7 @@ export async function downloadAll62ItemsAsZip(
     `대상기업: ${company?.companyName || '(주)더한농'} (대표자: ${company?.ceoName || '대표이사'})`,
     `발행일시: ${new Date().toLocaleString('ko-KR')}`,
     `총 문항수: 62문항 (1,000점 만점)`,
+    `※ 중요: 모든 개별 파일 상단 [질문 개요 및 평가 목적] 바로 앞에 [★ 필요서류 목록]이 명시되어 있어 실사 준비 서류를 즉시 대조 점검할 수 있습니다.`,
     '',
     '[폴더 구성 안내]',
     '1. 1_기술혁신능력_15문항 : R&D 투자현황, 연구인력, 연구조직 및 지식재산권 (300점)',
