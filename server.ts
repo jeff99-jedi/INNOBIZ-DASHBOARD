@@ -433,8 +433,12 @@ ${csvSnippet.slice(0, 2000)}
 async function startServer() {
   const distPath = path.join(process.cwd(), 'dist');
   const hasDist = fs.existsSync(path.join(distPath, 'index.html'));
+  const isDev =
+    process.env.NODE_ENV === 'development' ||
+    process.env.npm_lifecycle_event === 'dev' ||
+    (!hasDist && process.env.NODE_ENV !== 'production');
 
-  if (process.env.NODE_ENV === 'production' && hasDist) {
+  if (!isDev && hasDist) {
     console.log(`Starting in production mode, serving pre-built assets from ${distPath}`);
     app.use(express.static(distPath));
     app.get('*', (req, res) => {
